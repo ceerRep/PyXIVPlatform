@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 from asyncio.queues import Queue
+import logging
 from typing import Dict, List, Optional
 from asyncio import Future
 from enum import Enum
@@ -94,7 +95,10 @@ class CraftBot:
         state = cast_int(process.read_memory(
             process.follow_pointer_path(self._offset_state), 4))
 
-        self._role_state = RoleState(state)
+        try:
+            self._role_state = RoleState(state)
+        except:
+            self._role_state = RoleState.IDLE6
 
         if self._role_state != RoleState.CRAFTING:
             self._craft_state = CraftState.NORMAL
@@ -115,8 +119,8 @@ class CraftBot:
                 "/e Crafting: {i}/{num}".format(i=i, num=num)
             )
             
-            while self._role_state.value > RoleState.SITTING.value:
-                print(self._role_state)
+            while self._role_state.value > RoleState.PENDING.value:
+                logging.info(self._role_state)
                 await self._process.send_key("NUMPAD0")
                 await asyncio.sleep(0.1)
 
