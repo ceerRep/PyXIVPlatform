@@ -35,6 +35,7 @@ class RoleState(Enum):
     UNKNOWN7 = 7
     UNKNOWN8 = 8
     CRAFTING = 9
+    UNKNOWN10 = 10
 
 
 class CraftBot:
