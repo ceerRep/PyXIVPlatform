@@ -25,6 +25,18 @@ class CraftState(Enum):
     LOW = 4
 
 
+class RoleState(Enum):
+    IDLE1 = 1
+    SITTING = 2
+    PENDING = 3
+    SITTED = 4
+    UNKNOWN5 = 5
+    IDLE6 = 6
+    UNKNOWN7 = 7
+    UNKNOWN8 = 8
+    CRAFTING = 9
+
+
 class CraftBot:
     def __init__(self):
         self._config = PyXIVPlatform.instance.load_config(__package__)
@@ -34,6 +46,7 @@ class CraftBot:
             map(ast.literal_eval, self._config["offset_state"]))
         self._listening_actions: Dict[str, Future[None]] = dict()
         self._craft_state = CraftState.NORMAL
+        self._role_state = RoleState.IDLE1
         self._task: Optional[Future[None]] = None
 
         LogScanner.instance.log_listener(self.on_log_arrival)
@@ -71,8 +84,7 @@ class CraftBot:
                 if player.config["name"] in content:
                     for sname in self._listening_actions.keys():
                         if sname in content:
-                            self._listening_actions[sname].set_result(None)
-                            del self._listening_actions[sname]
+                            self._listening_actions.pop(sname).set_result(None)
                             break
 
     async def memory_scan(self, process: XIVMemory.XIVProcess):
@@ -81,7 +93,9 @@ class CraftBot:
         state = cast_int(process.read_memory(
             process.follow_pointer_path(self._offset_state), 4))
 
-        if state != 9:
+        self._role_state = RoleState(state)
+
+        if self._role_state != RoleState.CRAFTING:
             self._craft_state = CraftState.NORMAL
         else:
             self._craft_state = CraftState(
@@ -93,16 +107,26 @@ class CraftBot:
         with open(os.path.join(self._config["recipes_dir"], recipe + ".json"), encoding="utf-8") as fin:
             recipe = json.load(fin)
 
-        for _ in range(num):
+        for i in range(num):
             await asyncio.sleep(2)
 
-            await self._process.send_key("NUMPAD0")
-            await self._process.send_key("NUMPAD0")
-            await self._process.send_key("NUMPAD0")
-            await asyncio.sleep(1)
+            await PostNamazu.instance.send_cmd(
+                "/e Crafting: {i}/{num}".format(i=i, num=num)
+            )
+            
+            while self._role_state.value > RoleState.SITTING.value:
+                print(self._role_state)
+                await self._process.send_key("NUMPAD0")
+                await asyncio.sleep(0.1)
+
+            while self._role_state != RoleState.PENDING and \
+                    self._role_state != RoleState.CRAFTING:
+                await asyncio.sleep(0.1)
 
             for action in recipe:
                 await self.use_action(action, 3, 3.5)
+        
+        await PostNamazu.instance.send_cmd("/e Craft stopped")
 
     async def on_cmd(self, params: List[str]) -> str:
         if params[0] == 'craft':
@@ -117,4 +141,5 @@ class CraftBot:
         elif params[0] == 'stopcraft':
             if self._task:
                 self._task.cancel()
+                self._listening_actions = dict()
                 self._task = None
