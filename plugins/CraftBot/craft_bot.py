@@ -36,7 +36,7 @@ class RoleState(Enum):
     UNKNOWN7 = 7
     UNKNOWN8 = 8
     CRAFTING = 9
-    UNKNOWN10 = 10
+    BUFFED = 10
 
 
 class CraftBot:
@@ -105,10 +105,13 @@ class CraftBot:
         if self._role_state == RoleState.PENDING:
             self._craft_state = CraftState.NORMAL
         else:
-            self._craft_state = CraftState(
-                cast_int(
-                    process.read_memory(
-                        process.follow_pointer_path(self._offset_quality), 4)))
+            try:
+                self._craft_state = CraftState(
+                    cast_int(
+                        process.read_memory(
+                            process.follow_pointer_path(self._offset_quality), 4)))
+            except:
+                self._craft_state = CraftState.NORMAL
 
     async def craft(self, recipe: str, num: int):
         with open(os.path.join(self._config["recipes_dir"], recipe + ".json"), encoding="utf-8") as fin:
