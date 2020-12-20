@@ -55,6 +55,7 @@ class CraftBot:
         XIVMemory.instance.add_callback(self.memory_scan)
         CommandHelper.instance.add_command("craft", self.on_cmd)
         CommandHelper.instance.add_command("stopcraft", self.on_cmd)
+        CommandHelper.instance.add_command("autohandin", self.on_cmd)
 
     async def use_action(self, action: Union[str, List[str]], retry: int, timeout: float):
         for _ in range(retry):
@@ -118,8 +119,15 @@ class CraftBot:
             await PostNamazu.instance.send_cmd(
                 "/e Crafting: {i}/{num}".format(i=i, num=num)
             )
-            
-            while self._role_state.value > RoleState.PENDING.value:
+
+            while self._role_state == RoleState.CRAFTING:
+                await asyncio.sleep(0.1)
+
+            await asyncio.sleep(0.1)
+
+            now_state = self._role_state
+            while (self._role_state == now_state and 
+                    self._role_state not in (RoleState.PENDING, RoleState.CRAFTING)):
                 logging.info(self._role_state)
                 await self._process.send_key("NUMPAD0")
                 await asyncio.sleep(0.1)
@@ -128,10 +136,31 @@ class CraftBot:
                     self._role_state != RoleState.CRAFTING:
                 await asyncio.sleep(0.1)
 
+            await asyncio.sleep(0.2)
+
             for action in recipe:
                 await self.use_action(action, 3, 3.5)
-        
+
         await PostNamazu.instance.send_cmd("/e Craft stopped")
+
+    async def handin(self, num: int):
+        await asyncio.sleep(5)
+        for i in range(num):
+            await PostNamazu.instance.send_cmd("/e Handin {i}/{num}".format(i=i, num=num))
+            await self._process.send_key("NUMPAD0")
+            await asyncio.sleep(0.1)
+            await self._process.send_key("MULTIPLY")
+            await asyncio.sleep(0.1)
+            await self._process.send_key("NUMPAD0")
+            await asyncio.sleep(0.1)
+            await self._process.send_key("NUMPAD0")
+            await asyncio.sleep(1)
+    
+    def cancel(self):
+        if self._task:
+            self._listening_actions = dict()
+            self._task.cancel()
+            self._task = None
 
     async def on_cmd(self, params: List[str]) -> str:
         if params[0] == 'craft':
@@ -144,7 +173,6 @@ class CraftBot:
             except:
                 return "Usage: {cmd} recipe num".format(cmd=params[0])
         elif params[0] == 'stopcraft':
-            if self._task:
-                self._task.cancel()
-                self._listening_actions = dict()
-                self._task = None
+            self.cancel()
+        elif params[0] == 'autohandin':
+            self._task = asyncio.ensure_future(self.handin(int(params[1])))
