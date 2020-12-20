@@ -104,6 +104,9 @@ class XIVLogScanner:
         self._config = config
         self._offset = list(
             map(lambda x: ast.literal_eval(x), config["offset"]))
+        
+        self._log_filters: List[Callable[[XIVLogLine], bool]] = []
+        self._raw_filters: List[Callable[[XIVRawLogLine], bool]] = []
 
     async def __process_log(self, ffxiv: XIVProcess, offsets: List[int], buffer: bytes):
         loop = asyncio.get_event_loop()
@@ -119,6 +122,14 @@ class XIVLogScanner:
 
             raw_log_line = XIVRawLogLine(raw_line, timestamp, not self.first_scan)
             log_line = XIVLogLine(raw_line, timestamp, not self.first_scan)
+
+            for filter in self._log_filters:
+                if not filter(log_line):
+                    return
+            
+            for raw_filter in self._raw_filters:
+                if not raw_filter(raw_log_line):
+                    return
 
             for listener in self._raw_listeners:
                 loop.create_task(safe_call(listener, raw_log_line, ffxiv))
@@ -237,4 +248,12 @@ class XIVLogScanner:
 
     def log_listener(self, func):
         self._log_listeners.append(func)
+        return func
+    
+    def raw_filter(self, func):
+        self._raw_filters.append(func)
+        return func
+    
+    def log_filter(self, func):
+        self._log_filters.append(func)
         return func

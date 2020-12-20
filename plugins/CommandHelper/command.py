@@ -16,8 +16,6 @@ class CommandHelper:
         asyncio.get_event_loop().create_task(self.cmd_loop())
 
     async def read_loop(self, input_stream: io.TextIOBase, output_stream: io.TextIOBase):
-        output_stream.write("> ")
-        output_stream.flush()
         while True:
             if inspect.iscoroutinefunction(input_stream.readline):
                 line = await input_stream.readline()
@@ -40,16 +38,16 @@ class CommandHelper:
 
         if params:
             if params[0] not in self.callbacks:
-                return "%s is not a command\n" % params[0]
+                return "%s is not a command" % params[0]
 
             try:
                 ret = self.callbacks[params[0]](params)
                 if isinstance(ret, Awaitable):
                     ret = await ret
-                return (ret or "") + "\n"
+                return ret or ""
             except Exception as e:
-                return "Exception occured: %s %s\n" % (e,
-                                                       traceback.format_exc())
+                return "Exception occured: %s %s" % (e,
+                                                     traceback.format_exc())
 
         return ""
 
@@ -60,8 +58,6 @@ class CommandHelper:
             output: TextIOBase
 
             task = asyncio.ensure_future(self.emit(line))
-            task.add_done_callback(lambda x: (
+            task.add_done_callback(lambda x: x.result() and (
                 output.write(x.result()),
-                output.flush(),
-                output.write("> "),
                 output.flush()))

@@ -25,6 +25,20 @@ async def cmd_exit(params: List[str]):
     logging.info("Press enter to exit")
     return ""
 
+class StdioWrapper:
+    @staticmethod
+    def readline():
+        print("> ", end='', flush=True)
+        return sys.stdin.readline()
+    
+    @staticmethod
+    def write(msg: str):
+        logging.info(msg)
+        return len(msg)
+    
+    @staticmethod
+    def flush():
+        return sys.stdout.flush()
 
 def init(platform: PyXIVPlatform.XIVPlatform):
     global instance
@@ -32,7 +46,8 @@ def init(platform: PyXIVPlatform.XIVPlatform):
     cmd_helper = CommandHelper()
     instance = cmd_helper
     
-    cmd_helper.add_stream(sys.stdin, sys.stdout)
+    stdio = StdioWrapper()
+    cmd_helper.add_stream(stdio, stdio)
 
     cmd_helper.add_command("echo", cmd_echo)
     cmd_helper.add_command(
