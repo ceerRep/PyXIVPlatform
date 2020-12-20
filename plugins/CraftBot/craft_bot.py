@@ -67,7 +67,8 @@ class CraftBot:
                 try:
                     fut = asyncio.Future()
                     self._listening_actions[now_action] = fut
-                    await PostNamazu.instance.send_cmd("/e 准备发动 {now_action}".format(now_action=now_action))
+                    await PostNamazu.instance.send_cmd("/e Preparing {state} -> {now_action}".format(state=self._craft_state,
+                                                                                                     now_action=now_action))
                     await PostNamazu.instance.send_cmd("/ac {now_action}".format(now_action=now_action))
                     await asyncio.wait_for(fut, timeout=timeout)
                     await asyncio.sleep(0.2)
@@ -101,7 +102,7 @@ class CraftBot:
         except:
             self._role_state = RoleState.IDLE6
 
-        if self._role_state != RoleState.CRAFTING:
+        if self._role_state == RoleState.PENDING:
             self._craft_state = CraftState.NORMAL
         else:
             self._craft_state = CraftState(
@@ -126,7 +127,7 @@ class CraftBot:
             await asyncio.sleep(0.1)
 
             now_state = self._role_state
-            while (self._role_state == now_state and 
+            while (self._role_state == now_state and
                     self._role_state not in (RoleState.PENDING, RoleState.CRAFTING)):
                 logging.info(self._role_state)
                 await self._process.send_key("NUMPAD0")
@@ -155,7 +156,7 @@ class CraftBot:
             await asyncio.sleep(0.1)
             await self._process.send_key("NUMPAD0")
             await asyncio.sleep(1)
-    
+
     def cancel(self):
         if self._task:
             self._listening_actions = dict()
