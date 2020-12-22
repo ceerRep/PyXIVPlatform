@@ -62,6 +62,8 @@ class CraftBot:
 
     async def use_action(self, action: Union[str, List[str]], retry: int, timeout: float):
         for _ in range(retry):
+            if self._role_state == RoleState.SITTED:
+                break
             if isinstance(action, str):
                 now_action = action
             else:
@@ -147,6 +149,8 @@ class CraftBot:
 
             for action in recipe:
                 await self.use_action(action, self._retry_count, self._retry_timeout)
+                if self._role_state == RoleState.SITTED:
+                    break
 
         await PostNamazu.instance.send_cmd("/e Craft stopped")
 
