@@ -1,0 +1,6 @@
+{
+    "recipes_dir": "./recipes",
+    "retry_count": 3,
+    "retry_timeout": 3.5,
+    "delay_after_action": 0.2
+}

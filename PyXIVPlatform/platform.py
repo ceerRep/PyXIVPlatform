@@ -21,8 +21,8 @@ class XIVPlugin:
 
 
 class XIVPlatform:
-    def __init__(self, config_path: str):
-        self.__config_path = config_path
+    def __init__(self, config_paths: List[str]):
+        self.__config_paths = config_paths
         self.__plugins: Dict[str, XIVPlugin] = {}
 
         self.global_config = self.load_config("Global")
@@ -47,30 +47,22 @@ class XIVPlatform:
             if not isinstance(name, type):
                 name = name.__class__
             name = name.__name__
+        
+        config = {}
 
-        try:
-            with open(os.path.join(self.__config_path, name + '.json'), encoding='utf-8') as fin:
-                config = json.load(fin)
-        except:
-            config = {}
+        for config_path in self.__config_paths:
+            try:
+                with open(os.path.join(config_path, name + '.json'), encoding='utf-8') as fin:
+                    now_config = json.load(fin)
+            except:
+                now_config = {}
 
-        if not isinstance(config, dict):
-            config = {}
+            if not isinstance(now_config, dict):
+                now_config = {}
+            
+            config.update(now_config)
 
         return config
-
-    def save_config(self, name: Any, config: Dict[str, Any]) -> bool:
-        if not isinstance(name, str):
-            if not isinstance(name, type):
-                name = name.__class__
-            name = name.__name__
-
-        try:
-            with open(os.path.join(self.__config_path, name + '.json'), 'w', encoding='utf-8') as fout:
-                json.dump(config, fout, ensure_ascii=False, indent=2)
-        except:
-            return False
-        return True
 
 
 instance: Optional[XIVPlatform] = None

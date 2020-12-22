@@ -5,15 +5,14 @@ import logging
 import traceback
 from typing import *
 
-from .config import get_config
+from .config import config
 from .memoryhelper import *
 from .xivprocess import XIVProcess
-
 
 class MemoryScanner:
     def __init__(self):
         self.scanning = False
-        self.config = get_config()
+        self.config = config
         self.callbacks: List[Callable[[XIVProcess], Awaitable]] = []
 
     def add_callback(self, callback: Callable[[XIVProcess], Awaitable]):

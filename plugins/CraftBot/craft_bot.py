@@ -42,10 +42,13 @@ class RoleState(Enum):
 class CraftBot:
     def __init__(self):
         self._config = PyXIVPlatform.instance.load_config(__package__)
-        self._offset_quality = list(
+        self._offset_quality: List[int] = list(
             map(ast.literal_eval, self._config["offset_quality"]))
-        self._offset_state = list(
+        self._offset_state: List[int] = list(
             map(ast.literal_eval, self._config["offset_state"]))
+        self._retry_count: int = self._config["retry_count"]
+        self._retry_timeout: float = self._config["retry_timeout"]
+        self._delay_after_action: float = self._config["delay_after_action"]
         self._listening_actions: Dict[str, Future[None]] = dict()
         self._craft_state = CraftState.NORMAL
         self._role_state = RoleState.IDLE1
@@ -71,7 +74,7 @@ class CraftBot:
                                                                                                      now_action=now_action))
                     await PostNamazu.instance.send_cmd("/ac {now_action}".format(now_action=now_action))
                     await asyncio.wait_for(fut, timeout=timeout)
-                    await asyncio.sleep(0.2)
+                    await asyncio.sleep(self._delay_after_action)
                 except asyncio.TimeoutError:
                     del self._listening_actions[now_action]
                     continue
@@ -143,7 +146,7 @@ class CraftBot:
             await asyncio.sleep(0.2)
 
             for action in recipe:
-                await self.use_action(action, 3, 3.5)
+                await self.use_action(action, self._retry_count, self._retry_timeout)
 
         await PostNamazu.instance.send_cmd("/e Craft stopped")
 

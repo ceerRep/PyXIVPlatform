@@ -4,7 +4,7 @@ import asyncio
 
 from typing import *
 
-from .config import get_config
+from .config import config
 from .winapi import Winapi
 from .keysequence import parse_key
 
@@ -43,7 +43,7 @@ class XIVProcess:
         return Winapi.read_process_memory(self.handle, address, size)
 
     async def send_key(self, sequence: str):
-        delay = get_config()["key_press_delay"]
+        delay = config["key_press_delay"]
         sequence = parse_key(sequence)
 
         for key in sequence:

@@ -17,7 +17,7 @@ def main():
         logging.error("%s", context)
     asyncio.get_event_loop().set_exception_handler(exception_handler)
 
-    platform = PyXIVPlatform.XIVPlatform("config" if len(sys.argv) < 2 else sys.argv[1])
+    platform = PyXIVPlatform.XIVPlatform(sys.argv[1:])
     PyXIVPlatform.instance = platform
 
     platform.load_modules("plugins")

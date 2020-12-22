@@ -1,6 +1,9 @@
 .idea
 __pycache__
+
 /*.txt
 
 ^recipes/idle.json
 recipes/*.json
+
+config_user*/*.json
