@@ -1,4 +1,5 @@
 {
   "scan_interval": 0.05,
-  "key_press_delay": 0.05
+  "key_press_delay": 0.05,
+  "find_xiv_by_player_name": true
 }

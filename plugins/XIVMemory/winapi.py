@@ -56,6 +56,10 @@ class _WINAPI:
     FindWindowW.restype = c_void_p  # HWND
     FindWindowW.argtypes = [c_wchar_p, c_wchar_p]
 
+    FindWindowExW = windll.user32.FindWindowExW
+    FindWindowExW.restype = c_void_p # HWND
+    FindWindowExW.argtypes = [c_void_p, c_void_p, c_wchar_p, c_wchar_p]
+
     GetWindowThreadProcessId = windll.user32.GetWindowThreadProcessId
     GetWindowThreadProcessId.restype = c_uint32
     GetWindowThreadProcessId.argtypes = [c_void_p, POINTER(c_uint32)]
@@ -145,6 +149,10 @@ class Winapi:
     @staticmethod
     def find_window(window_class: Optional[str], window_name: Optional[str]) -> int:
         return _WINAPI.FindWindowW(window_class, window_name)
+    
+    @staticmethod
+    def find_window_ex(window_parent: Optional[int], window_after: Optional[int], window_class: Optional[str], window_name: Optional[str]) -> int:
+        return _WINAPI.FindWindowExW(window_parent, window_after, window_class, window_name)
 
     @staticmethod
     def get_window_pid(hwnd: int) -> int:

@@ -1,8 +1,11 @@
 #! /usr/bin/env python3
 
+import ast
 import asyncio
 
 from typing import *
+
+import player
 
 from .config import config
 from .winapi import Winapi
@@ -12,6 +15,28 @@ from .keysequence import parse_key
 class XIVProcess:
     def __init__(self) -> None:
         self.hwnd = Winapi.find_window("FFXIVGAME", None)
+
+        if not config["find_xiv_by_player_name"]:
+            self.hwnd = Winapi.find_window("FFXIVGAME", None)
+        else:
+            name_offset = ast.literal_eval(config["player_name_offset"])
+            now_hwnd = Winapi.find_window_ex(None, None, "FFXIVGAME", None)
+
+            while now_hwnd:
+                now_pid = Winapi.get_window_pid(now_hwnd)
+                now_handle = Winapi.open_process(now_pid)
+                address = Winapi.get_module_base_address(now_handle, "ffxiv_dx11.exe") + name_offset
+
+                buffer = Winapi.read_process_memory(now_handle, address, 64)
+                Winapi.close_handle(now_handle)
+                buffer = buffer[:buffer.find(b'\x00')]
+
+                if player.config["name"] == buffer.decode('utf-8'):
+                    break
+            
+                now_hwnd = Winapi.find_window_ex(None, now_hwnd, "FFXIVGAME", None)
+            
+            self.hwnd = now_hwnd
         self.pid = Winapi.get_window_pid(self.hwnd)
 
     def __enter__(self) -> 'XIVProcess':
