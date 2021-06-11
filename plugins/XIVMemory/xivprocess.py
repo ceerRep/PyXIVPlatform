@@ -67,20 +67,22 @@ class XIVProcess:
     def read_memory(self, address: int, size: int) -> bytearray:
         return Winapi.read_process_memory(self.handle, address, size)
 
-    async def send_key(self, sequence: str):
+    async def send_key(self, sequence: str, press: bool = True, release: bool = True):
         delay = config["key_press_delay"]
         sequence = parse_key(sequence)
 
-        for key in sequence:
-            Winapi.send_message(self.hwnd,
-                                0x0100,  # WM_KEYDOWN
-                                key,
-                                0)
-            await asyncio.sleep(delay)
+        if press:
+            for key in sequence:
+                Winapi.send_message(self.hwnd,
+                                    0x0100,  # WM_KEYDOWN
+                                    key,
+                                    0)
+                await asyncio.sleep(delay)
 
-        for key in sequence[::-1]:
-            Winapi.send_message(self.hwnd,
-                                0x0101,  # WM_UP
-                                key,
-                                0)
-            await asyncio.sleep(delay)
+        if release:
+            for key in sequence[::-1]:
+                Winapi.send_message(self.hwnd,
+                                    0x0101,  # WM_UP
+                                    key,
+                                    0)
+                await asyncio.sleep(delay)

@@ -15,7 +15,10 @@ from XIVMemory.memoryhelper import *
 
 async def safe_call(func, *args, **kwargs):
     try:
-        await func(*args, **kwargs)
+        ret = func(*args, **kwargs)
+        if isinstance(ret, Awaitable):
+            ret = await ret
+        return ret
     except Exception as e:
         print('[Error] ', e)
         traceback.print_exc()
