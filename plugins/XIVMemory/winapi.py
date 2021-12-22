@@ -19,6 +19,7 @@ class _WINAPI:
     PROCESS_VM_READ = 0x10
     PROCESS_VM_WRITE = 0x20
     PROCESS_QUERY_INFORMATION = 0x400
+    SYNCHRONIZE = 0x00100000
 
     OpenProcess = windll.kernel32.OpenProcess
     OpenProcess.argtypes = [c_uint32, c_uint32, c_uint32]
@@ -35,6 +36,22 @@ class _WINAPI:
         c_char_p,
         c_uint64,
         POINTER(c_uint64)]
+    
+    WriteProcessMemory = windll.kernel32.WriteProcessMemory
+    WriteProcessMemory.restype = c_int32
+    WriteProcessMemory.argtypes = [
+        c_void_p,
+        c_void_p,
+        c_char_p,
+        c_uint64,
+        POINTER(c_uint64)]
+    
+    WaitForSingleObject = windll.kernel32.WaitForSingleObject
+    WaitForSingleObject.restype = c_int32
+    WaitForSingleObject.argtypes = [
+        c_void_p,
+        c_int32
+    ]
 
     EnumProcessModules = windll.psapi.EnumProcessModules
     EnumProcessModules.restype = c_uint32
@@ -72,7 +89,7 @@ class Winapi:
     @staticmethod
     def open_process(pid: int) -> int:
         return _WINAPI.OpenProcess(
-            _WINAPI.PROCESS_QUERY_INFORMATION | _WINAPI.PROCESS_VM_OPERATION | _WINAPI.PROCESS_VM_READ | _WINAPI.PROCESS_VM_WRITE,
+            _WINAPI.PROCESS_QUERY_INFORMATION | _WINAPI.PROCESS_VM_OPERATION | _WINAPI.PROCESS_VM_READ | _WINAPI.PROCESS_VM_WRITE | _WINAPI.SYNCHRONIZE,
             False,
             pid
         )
@@ -82,7 +99,7 @@ class Winapi:
         return _WINAPI.CloseHandle(handle)
 
     @staticmethod
-    def read_process_memory(handle: int, address: int, size: int) -> bytearray:
+    def read_process_memory(handle: int, address: int, size: int) -> bytes:
         buffer = bytearray(size)
 
         bytes_read = c_uint64()
@@ -96,9 +113,26 @@ class Winapi:
         )
 
         if not success:
-            return bytearray()
+            return b''
 
-        return buffer
+        return bytes(buffer)
+    
+    @staticmethod
+    def write_process_memory(handle: int, address: int, buffer: bytes) -> bool:
+        size = len(buffer)
+        success = _WINAPI.WriteProcessMemory(
+            handle,
+            c_void_p(address),
+            buffer,
+            size,
+            None
+        )
+
+        return success != 0
+    
+    @staticmethod
+    def is_process_handle_valid(handle: int) -> bool:
+        return _WINAPI.WaitForSingleObject(handle, 0) == 0x00000102
 
     @staticmethod
     def enum_process_modules(handle: int) -> List[Tuple[str, int]]:
@@ -129,7 +163,7 @@ class Winapi:
         return ret
     
     @staticmethod
-    def get_module_base_address(handle: int, name: str):
+    def get_module_base_address(handle: int, name: str) -> int:
         needed = c_uint32()
         modules = (c_void_p * 512)()
 
@@ -140,11 +174,29 @@ class Winapi:
             info = _WINAPI.ModuleInfo()
             buffer = create_unicode_buffer(512)
             _WINAPI.GetModuleFileNameExW(handle, module, buffer, 512)
-            name: str = buffer.value
-            if name.endswith("ffxiv_dx11.exe"):
+            now_name: str = buffer.value
+            if now_name.endswith(name):
                 _WINAPI.GetModuleInformation(handle, module, byref(info), sizeof(_WINAPI.ModuleInfo))
                 return info.lpBaseOfDll
         return 0
+    
+    @staticmethod
+    def get_module_info(handle: int, name: str) -> Tuple[int, int]:
+        needed = c_uint32()
+        modules = (c_void_p * 512)()
+
+        if _WINAPI.EnumProcessModules(handle, modules, 512, byref(needed)) == 0:
+            return 0
+
+        for module in modules:
+            info = _WINAPI.ModuleInfo()
+            buffer = create_unicode_buffer(512)
+            _WINAPI.GetModuleFileNameExW(handle, module, buffer, 512)
+            now_name: str = buffer.value
+            if now_name.endswith(name):
+                _WINAPI.GetModuleInformation(handle, module, byref(info), sizeof(_WINAPI.ModuleInfo))
+                return info.lpBaseOfDll, info.SizeOfImage
+        return 0, 0
 
     @staticmethod
     def find_window(window_class: Optional[str], window_name: Optional[str]) -> int:

@@ -105,8 +105,6 @@ class XIVLogScanner:
             XIVRawLogLine, XIVProcess],
             Awaitable]] = []
         self._config = config
-        self._offset = list(
-            map(lambda x: ast.literal_eval(x), config["offset"]))
         
         self._log_filters: List[Callable[[XIVLogLine], bool]] = []
         self._raw_filters: List[Callable[[XIVRawLogLine], bool]] = []
@@ -182,7 +180,11 @@ class XIVLogScanner:
 
     async def scan(self, xiv: XIVProcess):
         try:
-            base_address = xiv.follow_pointer_path(self._offset)
+            base_address = xiv.follow_pointer_path(
+                [*map(ast.literal_eval, self._config['log_offset'])],
+                xiv.find_signature('logscanner_log')
+            )
+            # base_address = xiv.follow_pointer_path(self._offset)
 
             if base_address > 20:
                 memory = xiv.read_memory(base_address, 100)

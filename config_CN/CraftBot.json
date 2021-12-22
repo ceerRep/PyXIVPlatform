@@ -1,5 +1,4 @@
 {
-    "offset_quality": ["0x1DD13E8"],
-    "offset_state": ["0x1DD13B0"],
-    "offset_state_signature": "8B 05 ?? ?? ?? ?? BE 02 00 00 00"
+    "state_offset": ["0x02", "0x00"],
+    "quality_offset": ["0x02", "0x38"]
 }

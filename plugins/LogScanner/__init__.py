@@ -20,7 +20,9 @@ meta = {
 
 def init(platform: PyXIVPlatform.XIVPlatform):
     memoryscanner: XIVMemory.MemoryScanner = XIVMemory.instance
-    scanner = XIVLogScanner(platform.load_config(__package__))
+    config = platform.load_config(__package__)
+    scanner = XIVLogScanner(config)
+    memoryscanner.add_signature('logscanner_log', config['log_signature'])
     memoryscanner.add_callback(scanner.scan)
 
     stream = LogStream(scanner)

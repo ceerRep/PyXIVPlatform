@@ -2,5 +2,8 @@
     "recipes_dir": "./recipes",
     "retry_count": 3,
     "retry_timeout": 3.5,
-    "delay_after_action": 0.2
+    "delay_after_action": 0.2,
+    "state_signature": "8B 05 ?? ?? ?? ?? BE 02 00 00 00",
+    "state_offset": ["0x02", "0x00"],
+    "quality_offset": ["0x02", "0x30"]
 }

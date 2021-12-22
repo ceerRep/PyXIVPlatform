@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 from asyncio.queues import Queue
+import enum
 import logging
 from typing import Dict, List, Optional
 from asyncio import Future
@@ -11,6 +12,8 @@ import os
 import ast
 import json
 import time
+import math
+import struct
 import asyncio
 
 import PyXIVPlatform
@@ -65,10 +68,6 @@ class RoleState(Enum):
 class CraftBot:
     def __init__(self):
         self._config = PyXIVPlatform.instance.load_config(__package__)
-        self._offset_quality: List[int] = list(
-            map(ast.literal_eval, self._config["offset_quality"]))
-        self._offset_state: List[int] = list(
-            map(ast.literal_eval, self._config["offset_state"]))
         self._retry_count: int = self._config["retry_count"]
         self._retry_timeout: float = self._config["retry_timeout"]
         self._delay_after_action: float = self._config["delay_after_action"]
@@ -86,6 +85,8 @@ class CraftBot:
         self._idle_warn = False
 
         LogScanner.instance.log_listener(self.on_log_arrival)
+        XIVMemory.instance.add_signature(
+            'craftbot_state', self._config['state_signature'])
         XIVMemory.instance.add_callback(self.memory_scan)
         CommandHelper.instance.add_command("craft", self.on_cmd)
         CommandHelper.instance.add_command("stopcraft", self.on_cmd)
@@ -153,6 +154,7 @@ class CraftBot:
                     if self._task is not None:
                         self._task.cancel()
                         self._task = None
+
                         async def f():
                             await self.change_place()
                             self._task = asyncio.ensure_future(self.autofish())
@@ -164,10 +166,25 @@ class CraftBot:
     async def memory_scan(self, process: XIVMemory.XIVProcess):
         self._process = process
 
-        state = cast_int(process.read_memory(
-            process.follow_pointer_path(self._offset_state), 4))
+        craftbot_state_sig_offset = process.find_signature('craftbot_state')
+
+        if not craftbot_state_sig_offset:
+            return
+
+        offset_state = process.follow_pointer_path(
+            [*map(ast.literal_eval, self._config['state_offset'])],
+            craftbot_state_sig_offset
+        )
+
+        offset_quality = process.follow_pointer_path(
+            [*map(ast.literal_eval, self._config['quality_offset'])],
+            craftbot_state_sig_offset
+        )
+
+        state = cast_int(process.read_memory(offset_state, 4))
 
         old_role_state = self._role_state
+        old_craft_state = self._craft_state
 
         try:
             self._role_state = RoleState(state)
@@ -187,16 +204,18 @@ class CraftBot:
             self._craft_state = CraftState.NORMAL
         else:
             try:
-                state = cast_int(process.read_memory(
-                    process.follow_pointer_path(self._offset_quality), 4))
+                state = cast_int(process.read_memory(offset_quality, 4))
                 self._craft_state = CraftState(state)
             except:
-                if self._craft_value != state:
+                if self._craft_state != state:
                     logging.error(
                         "Unknown craft state: {state}".format(state=state))
                 self._craft_state = CraftState.NORMAL
 
             self._craft_value = state
+
+            if self._craft_state != old_craft_state:
+                logging.info(f"Craft state changed {old_craft_state} -> {self._craft_state}")
 
     async def craft(self, recipe: str, num: int):
         with open(os.path.join(self._config["recipes_dir"], recipe + ".json"), encoding="utf-8") as fin:
@@ -233,7 +252,7 @@ class CraftBot:
                     break
 
         await PostNamazu.instance.send_cmd("/e Craft stopped")
-    
+
     async def change_place(self):
 
         key = 'q' if self._change_place_time < 0 else 'e'
@@ -252,23 +271,23 @@ class CraftBot:
             if self._idle_warn:
                 await self.change_place()
                 self._idle_warn = False
-            
+
             # if not self._have_patient:
             #     if time.time() > self._next_can_use_patient:
-                    
+
             #         while 'FISHING' not in self._role_state.name:
             #             await PostNamazu.instance.send_cmd("/ac 抛竿")
             #             await asyncio.sleep(self._delay_after_action)
             #         while 'FISHING' in self._role_state.name:
             #             await PostNamazu.instance.send_cmd("/ac 提钩")
             #             await asyncio.sleep(self._delay_after_action)
-                    
+
             #         await asyncio.sleep(2)
-                    
+
             #         success = await self.use_action("耐心II", self._retry_count, self._retry_timeout, "采集优质获得率提升")
             #         if success:
             #             self._next_can_use_patient = time.time() + 560 / 7 * 3
-                    
+
             # await PostNamazu.instance.send_cmd("/e CD: {sec:.2f}s".format(sec=(self._next_can_use_patient - time.time())))
 
             if self._have_patient and not self._collect:
@@ -278,7 +297,7 @@ class CraftBot:
             if not self._have_patient and self._collect:
                 self._collect = False
                 await self.use_action("收藏品采集", self._retry_count, self._retry_timeout)
-            
+
             await asyncio.sleep(self._delay_after_action)
             await PostNamazu.instance.send_cmd("/ac 以小钓大")
             await PostNamazu.instance.send_cmd("/ac 以小钓大II")
@@ -286,7 +305,7 @@ class CraftBot:
             while 'FISHING' not in self._role_state.name:
                 await PostNamazu.instance.send_cmd("/ac 抛竿")
                 await asyncio.sleep(self._delay_after_action)
-            
+
             start_time = time.time()
 
             while 'FISHING' in self._role_state.name:
@@ -296,7 +315,7 @@ class CraftBot:
 
             elapsed_sec = end_time - start_time
             await PostNamazu.instance.send_cmd("/e Elapsed time: {sec:.2f}s".format(sec=elapsed_sec))
-            
+
             await asyncio.sleep(0.5)
 
             while 'FISH_BAITED' in self._role_state.name:
@@ -325,9 +344,9 @@ class CraftBot:
                 while self._role_state == RoleState.FISH_ASK_COLLECT:
                     await self._process.send_key("NUMPAD0")
                     await asyncio.sleep(0.1)
-            
+
             await asyncio.sleep(self._delay_after_action)
-    
+
     async def jump(self, timeout: float):
         while True:
             await self._process.send_key("SPACE")
@@ -381,6 +400,7 @@ class CraftBot:
                 return "Usage: {cmd} walktime".format(cmd=params[0])
         elif params[0] == 'jump':
             try:
-                self._task = asyncio.ensure_future(self.jump(ast.literal_eval(params[1])))
+                self._task = asyncio.ensure_future(
+                    self.jump(ast.literal_eval(params[1])))
             except:
                 return "Usage: {cmd} timeout".format(cmd=params[0])
