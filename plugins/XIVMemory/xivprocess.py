@@ -59,11 +59,10 @@ class XIVProcess:
         if name in self.signature_offsets:
             return self.signature_offsets[name]
 
-        signature = 'b"' + \
-            '\\x'.join(
-                [''] + self.signatures[name].split()
-            ).replace('\\x??', '.') + '"'
-        signature_bytes = ast.literal_eval(signature)
+        signature_bytes = rb'\x'.join(
+            [b''] + self.signatures[name].encode().split()
+        ).replace(rb'\x??', b'.')
+        
         match = re.search(signature_bytes, self.base_image)
 
         if match is None:
