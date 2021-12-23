@@ -19,6 +19,7 @@ class XIVProcess:
         self.hwnd = Winapi.find_window("FFXIVGAME", None)
         self.signatures: Mapping[str, str] = signatures
         self.signature_offsets: Dict[str, int] = {}
+        self.inited = False
 
         if not config["find_xiv_by_player_name"]:
             self.hwnd = Winapi.find_window("FFXIVGAME", None)
@@ -47,6 +48,16 @@ class XIVProcess:
 
                 self.hwnd = Winapi.find_window_ex(
                     None, self.hwnd, "FFXIVGAME", None)
+            else:
+                self.pid = 0
+                self.handle = 0
+                self.base_address, self.base_size = 0, 0
+                self.base_image = b''
+            
+            self.inited = True
+
+            # print log
+            self.find_signature('player_name') 
 
     def __enter__(self) -> 'XIVProcess':
         self.handle = Winapi.open_process(self.pid)
@@ -69,10 +80,11 @@ class XIVProcess:
             return 0
         else:
             addr = match.span(0)[0]
-            logging.info(f"Signature resolved: {name} at {addr:08x}")
-            self.signature_offsets[name] = addr
+            if self.inited:
+                logging.info(f"Signature resolved: {name} at {addr:08x}")
+                self.signature_offsets[name] = addr
 
-        return self.signature_offsets[name]
+            return addr
 
     def is_valid(self) -> bool:
         return Winapi.is_process_handle_valid(self.handle)
