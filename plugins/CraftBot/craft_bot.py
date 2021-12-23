@@ -110,7 +110,7 @@ class CraftBot:
                     self._listening_actions[pattern] = fut
                     await PostNamazu.instance.send_cmd("/e Preparing {state} -> {now_action}".format(state=self._craft_state,
                                                                                                      now_action=now_action))
-                    await PostNamazu.instance.send_cmd("/ac {now_action}".format(now_action=now_action))
+                    await PostNamazu.instance.send_cmd('/ac "{now_action}"'.format(now_action=now_action))
                     await asyncio.wait_for(fut, timeout=timeout)
                     await asyncio.sleep(self._delay_after_action)
                 except asyncio.TimeoutError:
