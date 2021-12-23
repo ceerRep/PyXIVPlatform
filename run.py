@@ -8,7 +8,7 @@ import asyncio
 import PyXIVPlatform
 
 
-def main():
+async def main():
     logging.basicConfig(
         format="[%(levelname)s] %(asctime)s %(name)s> %(message)s",
         level=logging.INFO,
@@ -43,8 +43,9 @@ def main():
 
     platform.load_modules("plugins")
 
-    asyncio.get_event_loop().run_forever()
-
 
 if __name__ == "__main__":
-    main()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(main())
+    loop.run_forever()

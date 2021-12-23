@@ -125,8 +125,8 @@ class CraftBot:
     def setTimeout(self, f: Callable[..., Awaitable], timeout: float):
         async def run():
             await asyncio.sleep(timeout)
-            self._task = asyncio.ensure_future(f())
-        self._task = asyncio.ensure_future(run())
+            self._task = asyncio.create_task(f())
+        self._task = asyncio.create_task(run())
 
     async def on_log_arrival(self, log: LogScanner.XIVLogLine, process: XIVMemory.XIVProcess):
         if log.new:
@@ -157,8 +157,8 @@ class CraftBot:
 
                         async def f():
                             await self.change_place()
-                            self._task = asyncio.ensure_future(self.autofish())
-                        self._task = asyncio.ensure_future(f())
+                            self._task = asyncio.create_task(self.autofish())
+                        self._task = asyncio.create_task(f())
             if log.type == 0x39:
                 if '没有进行任何操作，超过10分钟会被强制退出任务' in content:
                     self._idle_warn = True
@@ -377,19 +377,19 @@ class CraftBot:
                 recipe = params[1]
                 num = int(params[2])
 
-                self._task = asyncio.ensure_future(self.craft(recipe, num))
+                self._task = asyncio.create_task(self.craft(recipe, num))
                 return "Crafting"
             except:
                 return "Usage: {cmd} recipe num".format(cmd=params[0])
         elif params[0] == 'stopcraft':
             self.cancel()
         elif params[0] == 'autohandin':
-            self._task = asyncio.ensure_future(self.handin(int(params[1])))
+            self._task = asyncio.create_task(self.handin(int(params[1])))
         elif params[0] == 'autofish':
             try:
                 self._change_place_time = ast.literal_eval(params[1])
                 self._collect_threshold = ast.literal_eval(params[2])
-                self._task = asyncio.ensure_future(self.autofish())
+                self._task = asyncio.create_task(self.autofish())
             except:
                 return "Usage: {cmd} walktime threshold".format(cmd=params[0])
         elif params[0] == 'changeplace':
@@ -400,7 +400,7 @@ class CraftBot:
                 return "Usage: {cmd} walktime".format(cmd=params[0])
         elif params[0] == 'jump':
             try:
-                self._task = asyncio.ensure_future(
+                self._task = asyncio.create_task(
                     self.jump(ast.literal_eval(params[1])))
             except:
                 return "Usage: {cmd} timeout".format(cmd=params[0])

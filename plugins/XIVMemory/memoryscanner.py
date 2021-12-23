@@ -27,7 +27,7 @@ class MemoryScanner:
     def start_scan(self):
         if not self.scanning:
             self.scanning = True
-            asyncio.get_event_loop().create_task(self.scan())
+            asyncio.create_task(self.scan())
 
     async def scan(self):
         while self.scanning:

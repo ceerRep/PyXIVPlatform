@@ -13,7 +13,7 @@ class CommandHelper:
     def __init__(self):
         self.queue = asyncio.Queue(0)
         self.callbacks: Dict[str, Callable[[List[str]], Awaitable[str]]] = {}
-        asyncio.get_event_loop().create_task(self.cmd_loop())
+        asyncio.create_task(self.cmd_loop())
 
     async def read_loop(self, input_stream: io.TextIOBase, output_stream: io.TextIOBase):
         while True:
@@ -28,7 +28,7 @@ class CommandHelper:
             await self.queue.put((line, output_stream))
 
     def add_stream(self, input_stream: io.TextIOBase, output_stream: io.TextIOBase):
-        asyncio.get_event_loop().create_task(self.read_loop(input_stream, output_stream))
+        asyncio.create_task(self.read_loop(input_stream, output_stream))
 
     def add_command(self, name: str, callback: Callable[[List[str]], Awaitable[str]]):
         self.callbacks[name] = callback
@@ -57,7 +57,7 @@ class CommandHelper:
             line: str
             output: TextIOBase
 
-            task = asyncio.ensure_future(self.emit(line))
+            task = asyncio.create_task(self.emit(line))
             task.add_done_callback(lambda x: x.result() and (
                 output.write(x.result()),
                 output.flush()))

@@ -33,7 +33,7 @@ class LogStream:
     @staticmethod
     def write(msg: str):
         logging.info(msg)
-        asyncio.ensure_future(PostNamazu.instance.send_cmd("/e [BOT] {msg}".format(msg=msg)))
+        asyncio.create_task(PostNamazu.instance.send_cmd("/e [BOT] {msg}".format(msg=msg)))
         return len(msg)
 
     @staticmethod
