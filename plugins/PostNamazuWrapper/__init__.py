@@ -1,27 +1,30 @@
 #! /usr/bin/env python3
 
+import atexit
 import logging
 from typing import *
 
 import PyXIVPlatform
+import XIVMemory
 
-from .postnamazu import PostNamazu
+from .postnamazu import PostNamazuWrapper
 
 __all__ = ["meta", "instance"]
 
 meta = {
-    'name': 'PostNamazu',
+    'name': 'PostNamazuWrapper',
     'requirements': [
         "LogScanner",
-        "CommandHelper"
+        "CommandHelper",
+        "XIVMemory"
     ]
 }
 
 
 def init(platform: PyXIVPlatform.XIVPlatform):
-    namazu = PostNamazu()
+    namazu = PostNamazuWrapper()
     logging.info(__package__)
     return namazu
 
 
-instance: PostNamazu = init(PyXIVPlatform.instance)
+instance: PostNamazuWrapper = init(PyXIVPlatform.instance)

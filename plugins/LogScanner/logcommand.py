@@ -5,7 +5,7 @@ import asyncio
 
 from .logscanner import XIVLogScanner, XIVLogLine
 
-import PostNamazu
+import PostNamazuWrapper
 
 
 class LogStream:
@@ -33,7 +33,7 @@ class LogStream:
     @staticmethod
     def write(msg: str):
         logging.info(msg)
-        asyncio.create_task(PostNamazu.instance.send_cmd("/e [BOT] {msg}".format(msg=msg)))
+        asyncio.create_task(PostNamazuWrapper.instance.send_cmd("/e [BOT] {msg}".format(msg=msg)))
         return len(msg)
 
     @staticmethod

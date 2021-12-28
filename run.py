@@ -38,6 +38,8 @@ async def main():
         logging.error("%s", context)
     asyncio.get_event_loop().set_exception_handler(exception_handler)
 
+    sys.pycache_prefix = '__pycache__'
+
     platform = PyXIVPlatform.XIVPlatform(sys.argv[1:])
     PyXIVPlatform.instance = platform
 

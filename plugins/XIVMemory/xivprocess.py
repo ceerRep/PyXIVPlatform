@@ -17,7 +17,7 @@ from .keysequence import parse_key
 class XIVProcess:
     def __init__(self, signatures: Mapping[str, str]) -> None:
         self.hwnd = Winapi.find_window("FFXIVGAME", None)
-        self.signatures: Mapping[str, str] = signatures
+        self.signatures: Mapping[str, bytes] = signatures
         self.signature_offsets: Dict[str, int] = {}
         self.inited = False
 
@@ -53,11 +53,11 @@ class XIVProcess:
                 self.handle = 0
                 self.base_address, self.base_size = 0, 0
                 self.base_image = b''
-            
+
             self.inited = True
 
             # print log
-            self.find_signature('player_name') 
+            self.find_signature('player_name')
 
     def __enter__(self) -> 'XIVProcess':
         self.handle = Winapi.open_process(self.pid)
@@ -69,22 +69,22 @@ class XIVProcess:
     def find_signature(self, name: str) -> int:
         if name in self.signature_offsets:
             return self.signature_offsets[name]
-
-        signature_bytes = rb'\x'.join(
-            [b''] + self.signatures[name].encode().split()
-        ).replace(rb'\x??', b'.')
         
+        signature_bytes = self.signatures[name]
+
         match = re.search(signature_bytes, self.base_image)
 
         if match is None:
-            return 0
+            if self.inited:
+                logging.info(f"Signature resolve failed: {name}, pattern {signature_bytes}")
+            self.signature_offsets[name] = 0
         else:
             addr = match.span(0)[0]
             if self.inited:
                 logging.info(f"Signature resolved: {name} at {addr:08x}")
-                self.signature_offsets[name] = addr
+            self.signature_offsets[name] = addr
 
-            return addr
+        return self.signature_offsets[name]
 
     def is_valid(self) -> bool:
         return Winapi.is_process_handle_valid(self.handle)

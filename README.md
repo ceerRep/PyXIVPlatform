@@ -20,7 +20,7 @@
 		- `find_xiv_by_player_name` 是否根据 `player.name` 查找 FFXIV 进程
 	- `LogScanner`
 		- 提供了 FFXIV 内存日志相关接口，并在 `CommandHelper` 中注册了 FFXIV 内部聊天框的输入输出流
-- `PostNamazu`
+- `PostNamazuWrapper`
 	- 与鲇鱼精邮差交互的插件
 	- 配置：
 		- `post_namazu_addr` 鲇鱼精邮差 api 地址

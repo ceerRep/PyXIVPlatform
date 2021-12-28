@@ -17,7 +17,7 @@ meta = {
 }
 
 async def cmd_echo(params: List[str]):
-    return ' '.join(params[1]) + '\n'
+    return ' '.join(params[1:]) + '\n'
 
 
 async def cmd_exit(params: List[str]):

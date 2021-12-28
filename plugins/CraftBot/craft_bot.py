@@ -4,7 +4,7 @@ from asyncio.queues import Queue
 import enum
 import logging
 from typing import Dict, List, Optional
-from asyncio import Future
+from asyncio import Task, Future
 from enum import Enum
 from XIVMemory.memoryhelper import *
 
@@ -19,7 +19,7 @@ import asyncio
 import PyXIVPlatform
 import LogScanner
 import XIVMemory
-import PostNamazu
+import PostNamazuWrapper
 import CommandHelper
 import player
 
@@ -76,7 +76,7 @@ class CraftBot:
         self._craft_state = CraftState.NORMAL
         self._role_value = 0
         self._role_state = RoleState.IDLE1
-        self._task: Optional[Future[None]] = None
+        self._task: Optional[Task[None]] = None
         self._have_patient = False
         self._collect_threshold = 0.0
         self._change_place_time = 0.0
@@ -108,9 +108,9 @@ class CraftBot:
                 try:
                     fut = asyncio.Future()
                     self._listening_actions[pattern] = fut
-                    await PostNamazu.instance.send_cmd("/e Preparing {state} -> {now_action}".format(state=self._craft_state,
+                    await PostNamazuWrapper.instance.send_cmd("/e Preparing {state} -> {now_action}".format(state=self._craft_state,
                                                                                                      now_action=now_action))
-                    await PostNamazu.instance.send_cmd('/ac "{now_action}"'.format(now_action=now_action))
+                    await PostNamazuWrapper.instance.send_cmd('/ac "{now_action}"'.format(now_action=now_action))
                     await asyncio.wait_for(fut, timeout=timeout)
                     await asyncio.sleep(self._delay_after_action)
                 except asyncio.TimeoutError:
@@ -144,13 +144,13 @@ class CraftBot:
                         break
             if log.type in [0x8ae, 0x8b0]:
                 if player.config["name"] in content:
-                    if "采集优质获得率提升" in content:
+                    if "Gathering Fortune Up" in content:
                         if log.type == 0x8ae:
                             self._have_patient = True
                         else:
                             self._have_patient = False
             if log.type == 0x843:
-                if '警惕性很高' in content:
+                if 'sense something amiss' in content:
                     if self._task is not None:
                         self._task.cancel()
                         self._task = None
@@ -160,7 +160,7 @@ class CraftBot:
                             self._task = asyncio.create_task(self.autofish())
                         self._task = asyncio.create_task(f())
             if log.type == 0x39:
-                if '没有进行任何操作，超过10分钟会被强制退出任务' in content:
+                if 'elapsed since your last activity. If you are inactive for' in content:
                     self._idle_warn = True
 
     async def memory_scan(self, process: XIVMemory.XIVProcess):
@@ -224,7 +224,7 @@ class CraftBot:
         for i in range(num):
             await asyncio.sleep(2)
 
-            await PostNamazu.instance.send_cmd(
+            await PostNamazuWrapper.instance.send_cmd(
                 "/e Crafting: {i}/{num}".format(i=i, num=num)
             )
 
@@ -251,7 +251,7 @@ class CraftBot:
                 if self._role_state == RoleState.SITTED:
                     break
 
-        await PostNamazu.instance.send_cmd("/e Craft stopped")
+        await PostNamazuWrapper.instance.send_cmd("/e Craft stopped")
 
     async def change_place(self):
 
@@ -276,10 +276,10 @@ class CraftBot:
             #     if time.time() > self._next_can_use_patient:
 
             #         while 'FISHING' not in self._role_state.name:
-            #             await PostNamazu.instance.send_cmd("/ac 抛竿")
+            #             await PostNamazuWrapper.instance.send_cmd("/ac 抛竿")
             #             await asyncio.sleep(self._delay_after_action)
             #         while 'FISHING' in self._role_state.name:
-            #             await PostNamazu.instance.send_cmd("/ac 提钩")
+            #             await PostNamazuWrapper.instance.send_cmd("/ac 提钩")
             #             await asyncio.sleep(self._delay_after_action)
 
             #         await asyncio.sleep(2)
@@ -288,22 +288,22 @@ class CraftBot:
             #         if success:
             #             self._next_can_use_patient = time.time() + 560 / 7 * 3
 
-            # await PostNamazu.instance.send_cmd("/e CD: {sec:.2f}s".format(sec=(self._next_can_use_patient - time.time())))
+            # await PostNamazuWrapper.instance.send_cmd("/e CD: {sec:.2f}s".format(sec=(self._next_can_use_patient - time.time())))
 
-            if self._have_patient and not self._collect:
-                self._collect = True
-                await self.use_action("收藏品采集", self._retry_count, self._retry_timeout)
+            # if self._have_patient and not self._collect:
+            #     self._collect = True
+            #     await self.use_action("收藏品采集", self._retry_count, self._retry_timeout)
 
-            if not self._have_patient and self._collect:
-                self._collect = False
-                await self.use_action("收藏品采集", self._retry_count, self._retry_timeout)
+            # if not self._have_patient and self._collect:
+            #     self._collect = False
+            #     await self.use_action("收藏品采集", self._retry_count, self._retry_timeout)
 
-            await asyncio.sleep(self._delay_after_action)
-            await PostNamazu.instance.send_cmd("/ac 以小钓大")
-            await PostNamazu.instance.send_cmd("/ac 以小钓大II")
+            # await asyncio.sleep(self._delay_after_action)
+            # await PostNamazuWrapper.instance.send_cmd("/ac 以小钓大")
+            # await PostNamazuWrapper.instance.send_cmd("/ac 以小钓大II")
 
             while 'FISHING' not in self._role_state.name:
-                await PostNamazu.instance.send_cmd("/ac 抛竿")
+                await PostNamazuWrapper.instance.send_cmd('/ac "Cast"')
                 await asyncio.sleep(self._delay_after_action)
 
             start_time = time.time()
@@ -314,7 +314,7 @@ class CraftBot:
             end_time = time.time()
 
             elapsed_sec = end_time - start_time
-            await PostNamazu.instance.send_cmd("/e Elapsed time: {sec:.2f}s".format(sec=elapsed_sec))
+            await PostNamazuWrapper.instance.send_cmd("/e Elapsed time: {sec:.2f}s".format(sec=elapsed_sec))
 
             await asyncio.sleep(0.5)
 
@@ -323,13 +323,13 @@ class CraftBot:
                 if self._have_patient:
                     if elapsed_sec >= self._collect_threshold:
                         if 'LIGHT' in self._role_state.name:
-                            success = await self.use_action("精准提钩", 1, self._retry_timeout, "$有鱼上钩了")
+                            success = await self.use_action("Precision Hookset", 1, self._retry_timeout, "$Something bites")
                         elif 'HEAVY' in self._role_state.name:
-                            success = await self.use_action("强力提钩", 1, self._retry_timeout, "$有鱼上钩了")
+                            success = await self.use_action("	Powerful Hookset", 1, self._retry_timeout, "$Something bites")
                         if success:
                             self._next_can_use_patient += 50 / 7 * 3
                 if not success:
-                    await self.use_action("提钩", 1, self._retry_timeout, "$有鱼上钩了")
+                    await self.use_action("Hook", 1, self._retry_timeout, "$Something bites")
 
             while self._role_state == RoleState.VOID:
                 await asyncio.sleep(0.1)
@@ -355,7 +355,7 @@ class CraftBot:
     async def handin(self, num: int):
         await asyncio.sleep(5)
         for i in range(num):
-            await PostNamazu.instance.send_cmd("/e Handin {i}/{num}".format(i=i, num=num))
+            await PostNamazuWrapper.instance.send_cmd("/e Handin {i}/{num}".format(i=i, num=num))
             await self._process.send_key("NUMPAD0")
             await asyncio.sleep(0.1)
             await self._process.send_key("MULTIPLY")

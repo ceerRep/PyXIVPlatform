@@ -10,7 +10,7 @@ meta = {
     'requirements': [
         "XIVMemory",
         "LogScanner",
-        "PostNamazu",
+        "PostNamazuWrapper",
         "player"
     ]
 }

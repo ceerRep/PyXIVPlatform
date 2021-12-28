@@ -14,15 +14,25 @@ class MemoryScanner:
         self.scanning = False
         self.config = config
         self.callbacks: List[Callable[[XIVProcess], Awaitable]] = []
-        self.signatures: Dict[str, str] = {
-            'player_name': config['player_name_signature']
-        }
+        self.signatures: Dict[str, bytes] = {}
+        self.add_signature('player_name', config['player_name_signature'])
 
     def add_callback(self, callback: Callable[[XIVProcess], Awaitable]):
         self.callbacks.append(callback)
     
     def add_signature(self, name: str, value: str):
-        self.signatures[name] = value
+        self.signatures[name] = b''.join(
+            [
+                (b'(' if mark else b'') +
+                b'|'.join(map(lambda x: rb'\x' + x, part2s)) +
+                (b')' if mark else b'')
+                for part1 in value.encode().split()
+                if [
+                    part2s := part1.split(b'|'),
+                    mark := len(part2s) > 1
+                ]
+            ]
+        ).replace(rb'\x??', b'.')
 
     def start_scan(self):
         if not self.scanning:

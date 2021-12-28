@@ -211,7 +211,7 @@ class Winapi:
         pid = c_uint32()
         _WINAPI.GetWindowThreadProcessId(hwnd, byref(pid))
 
-        return pid
+        return pid.value
 
     @staticmethod
     def send_message(hwnd: int, msg: int, wparam: int, lparam: int):
