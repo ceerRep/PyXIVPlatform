@@ -54,10 +54,11 @@ class XIVProcess:
                 self.base_address, self.base_size = 0, 0
                 self.base_image = b''
 
-            self.inited = True
+            if self.hwnd:
+                self.inited = True
 
-            # print log
-            self.find_signature('player_name')
+                # print log
+                self.find_signature('player_name')
 
     def __enter__(self) -> 'XIVProcess':
         self.handle = Winapi.open_process(self.pid)
