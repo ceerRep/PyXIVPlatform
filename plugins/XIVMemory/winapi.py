@@ -186,7 +186,7 @@ class Winapi:
         modules = (c_void_p * 512)()
 
         if _WINAPI.EnumProcessModules(handle, modules, 512, byref(needed)) == 0:
-            return 0
+            return 0, 0
 
         for module in modules:
             info = _WINAPI.ModuleInfo()

@@ -27,7 +27,7 @@ class LogStream:
     async def readline(self) -> str:
         while True:
             log: XIVLogLine = await self.queue.get()
-            if log.type == 0x38 and log.fields[1][0] == '/':
+            if log.type == 0x38 and len(log.fields) >= 2 and log.fields[1][:1] == '/':
                 return log.fields[1][1:]
 
     @staticmethod

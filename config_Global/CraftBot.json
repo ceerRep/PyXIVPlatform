@@ -1,2 +1,4 @@
 {
+    "state_offset": ["0x02", "0x00"],
+    "quality_offset": ["0x02", "0x38"]
 }

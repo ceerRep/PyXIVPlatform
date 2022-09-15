@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import asyncio
+from asyncio.log import logger
 import logging
 import traceback
 from typing import *
@@ -41,20 +42,25 @@ class MemoryScanner:
 
     async def scan(self):
         while self.scanning:
-            with XIVProcess(self.signatures) as xiv:
-                new_handle = False
-                while xiv.is_valid():
-                    if not new_handle:
-                        new_handle = True
-                        logging.info("New XIV handle")
-                    for callback in self.callbacks:
-                        try:
-                            await callback(xiv)
-                        except Exception as e:
-                            logging.error("Exception occured: %s %s",
-                                        e,
-                                        traceback.format_exc())
+            try:
+                with XIVProcess(self.signatures) as xiv:
+                    new_handle = False
+                    while xiv.is_valid():
+                        if not new_handle:
+                            new_handle = True
+                            logging.info("New XIV handle")
+                        for callback in self.callbacks:
+                            try:
+                                await callback(xiv)
+                            except Exception as e:
+                                logging.error("Exception occured: %s %s",
+                                            e,
+                                            traceback.format_exc())
+
+                        await asyncio.sleep(self.config['scan_interval'])
 
                     await asyncio.sleep(self.config['scan_interval'])
-
-                await asyncio.sleep(self.config['scan_interval'])
+            except Exception as e:
+                logging.info(traceback.format_exception(e))
+                await asyncio.sleep(5)
+            

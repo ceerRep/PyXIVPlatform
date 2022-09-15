@@ -2,6 +2,7 @@
 
 import atexit
 import os
+from typing import Union
 
 import clr
 System = __import__('System')
@@ -40,3 +41,6 @@ class PostNamazuWrapper:
     
     async def send_cmd(self, cmd: str):
         self._postNamazu.DoTextCommand(cmd)
+    
+    async def send_bytes_cmd(self, cmd: bytes):
+        self._postNamazu.DoBytesCommand(cmd)

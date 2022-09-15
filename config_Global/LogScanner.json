@@ -1,2 +1,9 @@
 {
+    "log_offset": [
+        "16",
+        "0",
+        "0x40",
+        "0x38C"
+    ],
+    "description": "https://github.com/FFXIVAPP/sharlayan-resources/blob/master/signatures/china/latest.json CHATLOG"
 }

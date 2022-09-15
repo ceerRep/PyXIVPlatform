@@ -16,6 +16,14 @@ meta = {
     ]
 }
 
+
+async def cmd_test(params: List[str]):
+    import ast
+    import PostNamazuWrapper
+    await PostNamazuWrapper.instance.send_bytes_cmd(b' '.join(map(ast.literal_eval, params[1:])))
+    return ''
+
+
 async def cmd_echo(params: List[str]):
     return ' '.join(params[1:]) + '\n'
 
@@ -50,9 +58,8 @@ def init(platform: PyXIVPlatform.XIVPlatform):
     cmd_helper.add_stream(stdio, stdio)
 
     cmd_helper.add_command("echo", cmd_echo)
-    cmd_helper.add_command(
-        "exit", cmd_exit
-    )
+    cmd_helper.add_command("exit", cmd_exit)
+    cmd_helper.add_command("test", cmd_test)
 
     logging.info(__package__)
 
