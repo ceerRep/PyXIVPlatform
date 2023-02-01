@@ -40,7 +40,7 @@ class PostNamazuWrapper:
         self._postNamazu.ProcessChanged(pid)
     
     async def send_cmd(self, cmd: str):
-        self._postNamazu.DoTextCommand(cmd)
+        self._postNamazu.DoAction("command", cmd)
     
     async def send_bytes_cmd(self, cmd: bytes):
         self._postNamazu.DoBytesCommand(cmd)
