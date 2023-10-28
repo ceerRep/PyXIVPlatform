@@ -11,6 +11,8 @@ import logging
 import XIVMemory
 import PyXIVPlatform
 
+from typing import List
+
 dirpath = os.path.dirname(__file__)
 
 System.Reflection.Assembly.LoadFile(os.path.join(dirpath, "GreyMagic.dll"))
@@ -40,7 +42,9 @@ class PostNamazuWrapper:
         self._postNamazu.ProcessChanged(pid)
     
     async def send_cmd(self, cmd: str):
-        self._postNamazu.DoTextCommand(cmd)
+        self._postNamazu.DoAction('command', cmd)
+
+    async def cmd_do_cmd(self, params: List[str]):
+        await self.send_cmd(' '.join(params[1:]))
+        return ""
     
-    async def send_bytes_cmd(self, cmd: bytes):
-        self._postNamazu.DoBytesCommand(cmd)

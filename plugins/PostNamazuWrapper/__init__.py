@@ -6,6 +6,7 @@ from typing import *
 
 import PyXIVPlatform
 import XIVMemory
+import CommandHelper
 
 from .postnamazu import PostNamazuWrapper
 
@@ -23,6 +24,7 @@ meta = {
 
 def init(platform: PyXIVPlatform.XIVPlatform):
     namazu = PostNamazuWrapper()
+    CommandHelper.instance.add_command("do_cmd", namazu.cmd_do_cmd)
     logging.info(__package__)
     return namazu
 
