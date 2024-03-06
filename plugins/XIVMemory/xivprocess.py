@@ -23,6 +23,12 @@ class XIVProcess:
 
         if not config["find_xiv_by_player_name"]:
             self.hwnd = Winapi.find_window("FFXIVGAME", None)
+            self.pid = Winapi.get_window_pid(self.hwnd)
+            self.handle = Winapi.open_process(self.pid)
+            self.base_address, self.base_size = Winapi.get_module_info(
+                self.handle, "ffxiv_dx11.exe")
+            self.base_image: bytes = Winapi.read_process_memory(
+                self.handle, self.base_address, self.base_size)
         else:
             self.hwnd = Winapi.find_window_ex(None, None, "FFXIVGAME", None)
 
