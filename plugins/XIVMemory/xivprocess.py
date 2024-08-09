@@ -29,6 +29,7 @@ class XIVProcess:
                 self.handle, "ffxiv_dx11.exe")
             self.base_image: bytes = Winapi.read_process_memory(
                 self.handle, self.base_address, self.base_size)
+            self.inited = True
         else:
             self.hwnd = Winapi.find_window_ex(None, None, "FFXIVGAME", None)
 
@@ -40,17 +41,20 @@ class XIVProcess:
                 self.base_image: bytes = Winapi.read_process_memory(
                     self.handle, self.base_address, self.base_size)
 
-                address = self.follow_pointer_path(
-                    [*map(ast.literal_eval,
-                          config['player_name_path'])],
-                    self.find_signature('player_name')
-                )
-                buffer = Winapi.read_process_memory(self.handle, address, 64)
+                # address = self.follow_pointer_path(
+                #     [*map(ast.literal_eval,
+                #           config['player_name_path'])],
+                #     self.find_signature('player_name')
+                # )
+                # buffer = Winapi.read_process_memory(self.handle, address, 64)
                 Winapi.close_handle(self.handle)
-                buffer = buffer[:buffer.find(b'\x00')]
+                # buffer = buffer[:buffer.find(b'\x00')]
 
-                if player.config["name"] == buffer.decode('utf-8'):
+                if (player.config["name"].encode('utf-8') + b'\0') in self.base_image:
                     break
+
+                # if player.config["name"] == buffer.decode('utf-8'):
+                #     break
 
                 self.hwnd = Winapi.find_window_ex(
                     None, self.hwnd, "FFXIVGAME", None)
@@ -64,7 +68,7 @@ class XIVProcess:
                 self.inited = True
 
                 # print log
-                self.find_signature('player_name')
+                # self.find_signature('player_name')
 
     def __enter__(self) -> 'XIVProcess':
         self.handle = Winapi.open_process(self.pid)

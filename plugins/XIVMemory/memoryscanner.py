@@ -16,7 +16,7 @@ class MemoryScanner:
         self.config = config
         self.callbacks: List[Callable[[XIVProcess], Awaitable]] = []
         self.signatures: Dict[str, bytes] = {}
-        self.add_signature('player_name', config['player_name_signature'])
+        # self.add_signature('player_name', config['player_name_signature'])
 
     def add_callback(self, callback: Callable[[XIVProcess], Awaitable]):
         self.callbacks.append(callback)

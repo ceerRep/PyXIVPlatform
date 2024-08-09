@@ -1,0 +1,7 @@
+{
+    "enabled": false,
+    "endpoint": "https://api.openai.com",
+    "model": "gpt-4o",
+    "apikey": "XXXXXXXX",
+    "systemprompt": "You are a helpful translation assistant. 将以下所有最终幻想14中的句子翻译为中文。对于人名、地名等专有名词，你应在翻译时附上其英文名。"
+}
