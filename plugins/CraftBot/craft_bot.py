@@ -95,7 +95,21 @@ class CraftBot:
         CommandHelper.instance.add_command("changeplace", self.on_cmd)
         CommandHelper.instance.add_command("jump", self.on_cmd)
 
-    async def use_action(self, action: Union[str, List[str]], retry: int, timeout: float, log_pattern: Optional[str] = None):
+    async def translate_action_name(self, action: str, lang: Optional[str]):
+        if lang == None:
+            return action
+        index = {
+            "c": 0,
+            "j": 1,
+            "e": 2
+        }[lang]
+        for tuple in self._config["action_names_cje"]:
+            if action in tuple:
+                return tuple[index]
+        await PostNamazuWrapper.instance.send_cmd("/e WARNING: Unknown action {action}".format(action=repr(action)))
+        return action
+
+    async def use_action(self, action: Union[str, List[str]], retry: int, timeout: float, log_pattern: Optional[str] = None, lang: Optional[str] = None):
         for _ in range(retry):
             if self._role_state == RoleState.SITTED:
                 break
@@ -104,13 +118,18 @@ class CraftBot:
             else:
                 now_action = action[self._craft_state.value - 1]
             if now_action:
-                pattern = log_pattern if log_pattern else now_action
+                translated_action = await self.translate_action_name(now_action, lang)
+                pattern = log_pattern if log_pattern else translated_action
                 try:
                     fut = asyncio.Future()
                     self._listening_actions[pattern] = fut
-                    await PostNamazuWrapper.instance.send_cmd("/e Preparing {state} -> {now_action}".format(state=self._craft_state,
-                                                                                                     now_action=now_action))
-                    await PostNamazuWrapper.instance.send_cmd('/ac "{now_action}"'.format(now_action=now_action))
+                    if translated_action != now_action:
+                        printed_action = "{now_action} -> {translated_action}".format(now_action=now_action, translated_action=translated_action)
+                    else:
+                        printed_action = now_action
+                    await PostNamazuWrapper.instance.send_cmd("/e Preparing {state} -> {printed_action}".format(state=self._craft_state,
+                                                                                                                printed_action=printed_action))
+                    await PostNamazuWrapper.instance.send_cmd('/ac "{translated_action}"'.format(translated_action=translated_action))
                     await asyncio.wait_for(fut, timeout=timeout)
                     await asyncio.sleep(self._delay_after_action)
                 except asyncio.TimeoutError:
@@ -132,7 +151,7 @@ class CraftBot:
         if log.new:
             content = log.fields[1]
             if log.type & 0x800:  # system message
-                player_name_in_content = player.config["name"] in content
+                player_name_in_content = player.config["name"] in content or content.strip().startswith("You")
                 assert len(self._listening_actions) <= 1
                 for sname in self._listening_actions.keys():
                     real_sname = sname
@@ -217,7 +236,7 @@ class CraftBot:
             if self._craft_state != old_craft_state:
                 logging.info(f"Craft state changed {old_craft_state} -> {self._craft_state}")
 
-    async def craft(self, recipe: str, num: int):
+    async def craft(self, recipe: str, num: int, lang: Optional[str]):
         with open(os.path.join(self._config["recipes_dir"], recipe + ".json"), encoding="utf-8") as fin:
             recipe = json.load(fin)
 
@@ -247,7 +266,7 @@ class CraftBot:
             await asyncio.sleep(0.2)
 
             for action in recipe:
-                await self.use_action(action, self._retry_count, self._retry_timeout)
+                await self.use_action(action, self._retry_count, self._retry_timeout, lang=lang)
                 if self._role_state == RoleState.SITTED:
                     break
 
@@ -376,11 +395,14 @@ class CraftBot:
             try:
                 recipe = params[1]
                 num = int(params[2])
+                lang = params[3] if len(params) > 3 else None
+                if lang not in [None, "c", "j", "e"]:
+                    return "Unknown language: {lang}".format(lang=lang)
 
-                self._task = asyncio.create_task(self.craft(recipe, num))
+                self._task = asyncio.create_task(self.craft(recipe, num, lang))
                 return "Crafting"
             except:
-                return "Usage: {cmd} recipe num".format(cmd=params[0])
+                return "Usage: {cmd} recipe num [c/j/e]".format(cmd=params[0])
         elif params[0] == 'stopcraft':
             self.cancel()
         elif params[0] == 'autohandin':
