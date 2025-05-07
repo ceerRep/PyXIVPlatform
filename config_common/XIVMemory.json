@@ -1,10 +1,10 @@
 {
   "scan_interval": 0.01,
   "key_press_delay": 0.05,
-  "player_name_signature": "0F 10 ?? ?? ?? ?? ?? 89 ?? ?? ?? 40 ?? ?? 0F 10",
+  "player_name_signature": "CC 80 3D ?? ?? ?? ?? 00 74 08 0F B6 05",
   "player_name_path": [
     "0x3",
-    "0x0"
+    "0x1"
   ],
   "find_xiv_by_player_name": true
 }

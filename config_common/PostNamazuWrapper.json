@@ -1,3 +1,4 @@
 {
-  "post_namazu_addr": "http://127.0.0.1:8086/command"
+  "use_embedded_postnamazu": false,
+  "post_namazu_addr": "http://127.0.0.1:2019/command"
 }

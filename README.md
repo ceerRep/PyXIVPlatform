@@ -56,5 +56,25 @@
 			- 挂机用
 
 ## 使用方法
-修改 `player.json` 中 `name` 或者干脆把该功能关掉，然后启动对应文件即可  
-（国际服偏移应该是假的  
+
+### 配置
+
+`config_user_CN` 和 `config_user_Global` 是国服和国际服的默认用户配置文件夹，你也可以参照 `runCN.bat` 使用自己的配置文件夹。
+
+```
+powershell.exe -Command python run.py config_common config_CN config_user_114514
+```
+
+这样是使用 `config_user_114514` 文件夹。  
+程序读取配置时会按照从前往后的顺序在文件夹中读取，即 `config_user_114514` 覆盖 `config_CN`, `config_CN` 覆盖 `config_common`。
+
+### 配置用户名
+在对应的用户文件夹新建 `player.json`，内容如下。
+
+```json
+{
+    "name": "<角色名>"
+}
+```
+
+程序会尝试打开匹配的 FFXIV 进程。
