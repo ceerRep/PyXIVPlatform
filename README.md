@@ -57,12 +57,16 @@
 
 ## 使用方法
 
+### 环境准备
+
+安装 [uv](https://docs.astral.sh/uv/),首次运行 bat 时会自动准备 Python 环境和依赖。
+
 ### 配置
 
 `config_user_CN` 和 `config_user_Global` 是国服和国际服的默认用户配置文件夹，你也可以参照 `runCN.bat` 使用自己的配置文件夹。
 
 ```
-powershell.exe -Command python run.py config_common config_CN config_user_114514
+powershell.exe -Command uv run python run.py config_common config_CN config_user_114514
 ```
 
 这样是使用 `config_user_114514` 文件夹。  
