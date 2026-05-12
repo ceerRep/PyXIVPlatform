@@ -219,22 +219,22 @@ class CraftBot:
             logging.info("Role changed {old_role} -> {new_role}".format(
                 old_role=old_role_state, new_role=self._role_state))
 
-        if self._role_state == RoleState.PENDING:
-            self._craft_state = CraftState.NORMAL
-        else:
+        if self._role_state in (RoleState.CRAFTING, RoleState.BUFFED):
+            state = cast_int(process.read_memory(offset_quality, 4))
             try:
-                state = cast_int(process.read_memory(offset_quality, 4))
                 self._craft_state = CraftState(state)
             except:
-                if self._craft_state != state:
+                if self._craft_value != state:
                     logging.error(
                         "Unknown craft state: {state}".format(state=state))
                 self._craft_state = CraftState.NORMAL
 
             self._craft_value = state
+        else:
+            self._craft_state = CraftState.NORMAL
 
-            if self._craft_state != old_craft_state:
-                logging.info(f"Craft state changed {old_craft_state} -> {self._craft_state}")
+        if self._craft_state != old_craft_state:
+            logging.info(f"Craft state changed {old_craft_state} -> {self._craft_state}")
 
     async def craft(self, recipe: str, num: int, lang: Optional[str]):
         with open(os.path.join(self._config["recipes_dir"], recipe + ".json"), encoding="utf-8") as fin:
