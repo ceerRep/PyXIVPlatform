@@ -4,8 +4,12 @@
     "retry_timeout": 3.5,
     "delay_after_action": 0.2,
     "state_signature": "8B 05 ?? ?? ?? ?? BE 02 00 00 00",
+    "_comment_state_signature": "mov eax,[rip+disp32]; mov esi,2 — RIP target is a global uint32[] timeline array (G), not a struct pointer. See AGENTS.md for cross-references (FFXIVClientStructs / Artisan / GatherBuddyReborn).",
     "state_offset": ["0x02", "0x00"],
-    "quality_offset": ["0x02", "0x30"],
+    "_comment_state_offset": "0x02 = RIP-relative inst_pos (disp32 start, not a plain offset). G+0x00 = Src[0] = currently-playing ActionTimelineId (consumed by RoleState).",
+    "quality_offset": ["0x02", "0x38"],
+    "_comment_quality_offset": "0x02 = RIP-relative inst_pos. G+0x38 = Src[14] (15th timeline slot). Empirically reads 1/2/3/4 (Normal/Good/Excellent/Poor) during synthesis, but no static IDA xref proves the field is the condition byte — see AGENTS.md open question. CN/Global both use 0x38; older builds shipped 0x30 in config_common.",
+    "_comment_action_names_cje": "Crafter action names (CN / JP / EN). When new actions ship in a major patch, sync from PunishXIV/Artisan or game data CSVs.",
     "action_names_cje": [
         ["制作", "作業", "Basic Synthesis"],
         ["加工", "加工", "Basic Touch"],
