@@ -1,7 +1,10 @@
 {
+  "_comment_scan_interval": "Seconds between each memory scan iteration; lower = more responsive but higher CPU usage.",
   "scan_interval": 0.01,
+  "_comment_key_press_delay": "Seconds to wait between each key-down/key-up event when sending a key sequence.",
   "key_press_delay": 0.05,
-  "player_name_signature": "CC 80 3D ?? ?? ?? ?? 00 74 08 0F B6 05",
+  "_comment_player_name_signature": "FFXIVClientStructs PlayerState::Instance(). hit+3 is RIP-relative disp32 to a PlayerState instance embedded directly in .data (not a pointer to one); player name is UTF-8 char[] at instance+0x01, NUL-terminated. Player name is empty / zeros until login.",
+  "player_name_signature": "48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 84 C0 75 06 F6 43 18 02",
   "player_name_path": [
     "0x3",
     "0x1"
