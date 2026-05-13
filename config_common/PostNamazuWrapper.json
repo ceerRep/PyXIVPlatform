@@ -1,4 +1,4 @@
 {
-  "use_embedded_postnamazu": false,
+  "use_embedded_postnamazu": true,
   "post_namazu_addr": "http://127.0.0.1:2019/command"
 }

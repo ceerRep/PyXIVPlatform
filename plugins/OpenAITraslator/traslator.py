@@ -16,7 +16,6 @@ class OpenAITraslator:
         self._apikey: str = self._config["apikey"]
         self._systemprompt: str = self._config["systemprompt"]
         LogScanner.instance.log_listener(self.on_log_arrival)
-        print(self._endpoint)
         self._client = AsyncOpenAI(
             base_url=self._endpoint +
             ("/v1" if self._endpoint[-1] != '/' else 'v1'),

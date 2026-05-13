@@ -20,14 +20,22 @@ if config["use_embedded_postnamazu"]:
     dirpath = os.path.dirname(__file__)
 
     System.Reflection.Assembly.LoadFile(os.path.join(dirpath, "GreyMagic.dll"))
-    System.Reflection.Assembly.LoadFile(os.path.join(dirpath, "PostNamazu.dll"))
+    System.Reflection.Assembly.LoadFile(os.path.join(dirpath, "Newtonsoft.Json.dll"))
+    PostNamazuAssembly = System.Reflection.Assembly.LoadFile(os.path.join(dirpath, "PostNamazu.dll"))
 
-    PostNamazu = __import__('PostNamazu')
-    PostNamazu.Logger.SetLogger(System.Action[str](logging.info))
+    PostNamazuType = PostNamazuAssembly.GetType("PostNamazu.PostNamazu")
+    PostNamazuLoggerType = PostNamazuAssembly.GetType("PostNamazu.Logger")
+    if PostNamazuType is None or PostNamazuLoggerType is None:
+        raise ImportError("PostNamazu.dll does not expose PostNamazu.PostNamazu or PostNamazu.Logger")
+
+    PostNamazuLoggerType.GetMethod("SetLogger").Invoke(
+        None,
+        System.Array[System.Object]([System.Action[str](logging.info)])
+    )
 
     class PostNamazuWrapper:
         def __init__(self):
-            self._postNamazu = PostNamazu.PostNamazu()
+            self._postNamazu = System.Activator.CreateInstance(PostNamazuType)
             self._postNamazu.InitPlugin()
             XIVMemory.instance.add_callback(self.scan)
             atexit.register(self.deinit)

@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=64.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "PyXIVPlatform"
+version = "1.0.0"
+description = "FFXIV 脚本平台 — 支持内存日志读取、自动制作、自动钓鱼等"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "ceerrep"},
+]
+
+dependencies = [
+    "aiohttp>=3.9",
+    "openai>=1.0",
+]
+
+[project.optional-dependencies]
+# 嵌入式 PostNamazu 模式需要 .NET 运行时 和 pythonnet
+# pip install PyXIVPlatform[embedded]
+embedded = [
+    "pythonnet>=3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ceerrep/PyXIVPlatform"
+
+[tool.setuptools.packages.find]
+include = ["PyXIVPlatform*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.dll"]
+
+[tool.setuptools.packages]
+# 插件目录通过运行时动态加载，不包含在包中

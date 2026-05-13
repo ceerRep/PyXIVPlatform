@@ -20,7 +20,8 @@ meta = {
 }
 
 class SkipMainCutscenes:
-    signature = '75|90 33|90 48 ?? ?? ?? ?? ?? ?? ?? ?? 00 00 00 48 ?? ?? ?? E8 ?? ?? ?? ?? ?? ?? ?? 00 74|90 18|90'
+    signature = '75|90 39|90 48 ?? ?? ?? ?? ?? ?? ?? ?? 00 00 00 48 ?? ?? ?? E8 ?? ?? ?? ?? ?? ?? ?? 00 74|90 1E|90'
+    #           '75    39    48 8B 0D 4F 43 D7 01 BA DF 00 00 00 48 ?? ?? ?? E8 71 BE 52 FF 83 78 18 00 74    1E    83 78 20 00 74 18'
     signature_len = len(signature.split())
     def __init__(self, memory: XIVMemory.MemoryScanner, command: CommandHelper.CommandHelper):
         self._next_action = None
@@ -38,11 +39,13 @@ class SkipMainCutscenes:
             case 'skip':
                 process.write_memory(addr, b'\x90\x90')
                 process.write_memory(addr + self.signature_len - 2, b'\x90\x90')
+                process.write_memory(addr + self.signature_len + 4, b'\x90\x90')
 
                 self._action_fut.set_result('main cutscenes skipped')
             case 'restore':
-                process.write_memory(addr, b'\x75\x33')
-                process.write_memory(addr + self.signature_len - 2, b'\x74\x18')
+                process.write_memory(addr, b'\x75\x39')
+                process.write_memory(addr + self.signature_len - 2, b'\x74\x1E')
+                process.write_memory(addr + self.signature_len + 4, b'\x74\x18')
 
                 self._action_fut.set_result('main cutscenes restored')
         self._next_action = None
