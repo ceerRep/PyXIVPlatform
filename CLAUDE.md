@@ -1,0 +1,1 @@
+C:/Users/Menci/Projects/PyXIVPlatform/AGENTS.md
