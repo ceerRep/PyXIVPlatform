@@ -24,6 +24,21 @@ import CommandHelper
 import player
 
 
+# --------------------------------------------------------------------------
+# CraftState
+#
+# Read from G+0x38 via config quality_offset=["0x02","0x38"], i.e. the 15th
+# slot (Src[14]) of the global uint32[] timeline array reached through
+# state_signature. The field empirically reads 1/2/3/4 (Normal/Good/Excellent/
+# Poor) during synthesis, but no IDA xref proves the slot is actually the
+# crafting condition byte — a future patch may shift it. See the open
+# questions list in AGENTS.md.
+#
+# Modern alternatives (no raw memory scan):
+#   EventFramework -> CraftEventHandler.Condition
+#   AddonSynthesis.AtkValues[12].Int
+# Both are used by PunishXIV/Artisan.
+# --------------------------------------------------------------------------
 class CraftState(Enum):
     VOID = 0
     NORMAL = 1
@@ -32,37 +47,74 @@ class CraftState(Enum):
     LOW = 4
 
 
+# --------------------------------------------------------------------------
+# RoleState
+#
+# Subset of ActionTimelineId values that PyXIVPlatform's craft / fish state
+# machines actually act on — not an exhaustive enumeration of the table.
+#
+# IDs come from the game's ActionTimeline.csv (see thewakingsands/
+# ffxiv-datamining-cn or xivapi/ffxiv-datamining; both regions are kept
+# byte-identical at the data level, so either CSV is authoritative).
+#
+# How the value is read:
+#   state_signature resolves to a global uint32[] timeline array G.
+#   G+0x00 = Src[0] = currently-playing ActionTimelineId.
+#   The game updates G via memmove(G, src, 4*count) on every action change.
+#
+# When a new patch shifts a fishing / sitting / crafting animation, the
+# right fix is almost always to look up the new row in ActionTimeline.csv —
+# not to re-scan the signature.
+# --------------------------------------------------------------------------
 class RoleState(Enum):
     VOID = 0
-    IDLE1 = 1
-    SITTING = 2
-    PENDING = 3
-    SITTED = 4
-    UNKNOWN5 = 5
-    IDLE6 = 6
-    UNKNOWN7 = 7
-    UNKNOWN8 = 8
-    CRAFTING = 9
-    BUFFED = 10
-    FISH_IDLE = 271
-    FISH_FINISHED = 273
-    FISH_FISHING0 = 274
-    FISH_FISHING1 = 275
-    FISH_HOOK_NOTHING = 283
-    FISH_HOOK = 284
-    FISH_LIGHT_FISH_BAITED = 292
-    FISH_HEAVY_FISH_BAITED = 293
-    FISH_SPECIAL_FISH_BAITED = 294
-    FISH_IDLE_SITTED = 3143
-    FISH_FINISHED_SITTED = 3144
-    FISH_FISHING_SITTED0 = 3145
-    FISH_FISHING_SITTED1 = 3146
-    FISH_HOOK_NOTHING_SITTED = 3154
-    FISH_HOOK_SITTED = 3155
-    FISH_HOOK_HEAVY = 4659
-    FISH_HOOK_LIGHT = 4660
-    FISH_UNKNOWN_IDLE = 4661  # After 撒饵
-    FISH_ASK_COLLECT = 527502
+    IDLE1 = 1            # ActionTimeline 1:  normal/idle_loop
+    SITTING = 2          # ActionTimeline 2:  normal/idle
+    PENDING = 3          # ActionTimeline 3:  normal/idle_inactive (crafting open)
+    SITTED = 4           # ActionTimeline 4:  normal/idle_inactive (crafting result)
+    UNKNOWN5 = 5         # ActionTimeline 5:  normal/turn_loop_l (未确认语义)
+    IDLE6 = 6            # ActionTimeline 6:  normal/turn_loop_r
+    UNKNOWN7 = 7         # ActionTimeline 7:  (Name 空，合法 timeline)
+    UNKNOWN8 = 8         # ActionTimeline 8:  (Name 空，合法 timeline)
+    CRAFTING = 9         # ActionTimeline 9:  (Name 空，制作中)
+    BUFFED = 10          # ActionTimeline 10: (Name 空，制作中有 buff)
+    FISH_IDLE = 271               # ActionTimeline 271:  fishing/idle_loop
+    FISH_FINISHED = 273           # ActionTimeline 273:  fishing/finish
+    FISH_FISHING0 = 274           # ActionTimeline 274:  fishing/casting
+    FISH_FISHING1 = 275           # ActionTimeline 275:  fishing/casting_loop
+    FISH_HOOK_NOTHING = 283       # ActionTimeline 283:  fishing/miss
+    FISH_HOOK = 284               # ActionTimeline 284:  fishing/hooking
+    # 注意：以下三个命名存在误导，但 autofish 用 'LIGHT'/'HEAVY'/'BAITED' in name
+    # 做字符串匹配，不得改名，否则 autofish 逻辑会断。
+    FISH_LIGHT_FISH_BAITED = 292   # ActionTimeline 292:  fishing/hit_excite（命名误导：实际是 excite 咬钩，autofish 用 'LIGHT' in name 匹配精准提钩，故不改名）
+    FISH_HEAVY_FISH_BAITED = 293   # ActionTimeline 293:  fishing/hit_strike（命名误导：实际是 strike 咬钩，autofish 用 'HEAVY' in name 匹配力提钩，故不改名）
+    FISH_SPECIAL_FISH_BAITED = 294 # ActionTimeline 294:  fishing/hit_bite（命名误导：实际是 bite 咬钩，autofish 用 'BAITED' in name 匹配普通提钩，故不改名）
+    FISH_IDLE_SITTED = 3143           # ActionTimeline 3143: fishing_chair/idle_loop
+    FISH_FINISHED_SITTED = 3144       # ActionTimeline 3144: fishing_chair/finish
+    FISH_FISHING_SITTED0 = 3145       # ActionTimeline 3145: fishing_chair/casting
+    FISH_FISHING_SITTED1 = 3146       # ActionTimeline 3146: fishing_chair/casting_loop
+    FISH_HOOK_NOTHING_SITTED = 3154   # ActionTimeline 3154: fishing_chair/miss
+    FISH_HOOK_SITTED = 3155           # ActionTimeline 3155: fishing_chair/hooking
+    FISH_HOOK_HEAVY = 4659            # ActionTimeline 4659: fishing/powerful_hooking
+    FISH_HOOK_LIGHT = 4660            # ActionTimeline 4660: fishing/precision_hooking
+    FISH_UNKNOWN_IDLE = 4661          # ActionTimeline 4661: fishing/idle_after_bait（撒饵后空闲）
+    # 7.x 新增——钓鱼立位
+    FISH_SONAR = 4662                 # ActionTimeline 4662: fishing/sonar（鱼群探测）
+    FISH_TRIPLE_HOOKING = 8052        # ActionTimeline 8052: fishing/triple_hooking
+    FISH_BIGSIZE = 8055               # ActionTimeline 8055: fishing/bigsize
+    FISH_GP_RECOVERY = 8056           # ActionTimeline 8056: fishing/gp_recovery
+    FISH_RETRIEVE_LURE = 11952        # ActionTimeline 11952: fishing/retrieve_lure
+    FISH_REELING_LURE = 11953         # ActionTimeline 11953: fishing/reeling_lure
+    FISH_HOOK_BT = 12195              # ActionTimeline 12195: fishing/hooking_bt
+    # 7.x 新增——钓鱼坐位
+    FISH_HOOK_HEAVY_SITTED = 3170     # ActionTimeline 3170: fishing_chair/hooking_big
+    FISH_STRONG_HOOKING_SITTED = 4663 # ActionTimeline 4663: fishing_chair/strong_hooking
+    FISH_HOOK_LIGHT_SITTED = 4665     # ActionTimeline 4665: fishing_chair/precision_hooking
+    FISH_TRIPLE_HOOKING_SITTED = 8053 # ActionTimeline 8053: fishing_chair/triple_hooking
+    # 7.x 新增——制作
+    CRAFT_GODSWORK = 11619            # ActionTimeline 11619: craft/action_godswork（工匠神工动作）
+    # 特殊值
+    FISH_ASK_COLLECT = 527502  # 超出 ActionTimeline 表范围（表最大约 25000）；推测 0x80000 | 0xC8E（高位 flag 编码），运行时实测有效，来源未在 binary 中硬编码
 
 
 class CraftBot:
@@ -190,11 +242,13 @@ class CraftBot:
         if not craftbot_state_sig_offset:
             return
 
+        # RIP-relative 解引：0x02 是 disp32 起点，见 config_common/CraftBot.json 的 _comment_state_offset
         offset_state = process.follow_pointer_path(
             [*map(ast.literal_eval, self._config['state_offset'])],
             craftbot_state_sig_offset
         )
 
+        # G+0x38 = Src[14]，语义为制作 condition；见 config_common/CraftBot.json 的 _comment_quality_offset
         offset_quality = process.follow_pointer_path(
             [*map(ast.literal_eval, self._config['quality_offset'])],
             craftbot_state_sig_offset
