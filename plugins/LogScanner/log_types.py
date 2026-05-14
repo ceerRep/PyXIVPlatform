@@ -1,0 +1,11 @@
+#! /usr/bin/env python3
+
+
+class LogType:
+    SYSTEM_FLAG = 0x800
+    ECHO = 0x38
+    SYSTEM_NOTICE = 0x39
+    NPC_DIALOG = 0x3D
+    GATHER_STATUS_GAIN = 0x8AE
+    GATHER_STATUS_LOSE = 0x8B0
+    GATHERING_SYSTEM = 0x843

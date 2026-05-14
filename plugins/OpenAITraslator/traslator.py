@@ -1,5 +1,6 @@
 import PyXIVPlatform
 import LogScanner
+from LogScanner.log_types import LogType
 import XIVMemory
 import PostNamazuWrapper
 import CommandHelper
@@ -24,7 +25,7 @@ class OpenAITraslator:
 
     async def on_log_arrival(self, log: LogScanner.XIVLogLine, process: XIVMemory.XIVProcess):
         if self._enabled and log.new:
-            if log.type in [0x3d, 0x39]:
+            if log.type in (LogType.NPC_DIALOG, LogType.SYSTEM_NOTICE):
                 content = log.fields[0] + ': ' + ' '.join(log.fields[1:])
                 response = await self._client.chat.completions.create(
                     model=self._model,

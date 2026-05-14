@@ -47,22 +47,39 @@ class XIVPlatform:
             if not isinstance(name, type):
                 name = name.__class__
             name = name.__name__
-        
+
         config = {}
 
         for config_path in self.__config_paths:
             try:
                 with open(os.path.join(config_path, name + '.json'), encoding='utf-8') as fin:
                     now_config = json.load(fin)
-            except:
+            except Exception:
+                logging.debug("Could not load config %s/%s.json", config_path, name)
                 now_config = {}
 
             if not isinstance(now_config, dict):
                 now_config = {}
-            
+
             config.update(now_config)
 
         return config
+
+    def save_config(self, name: str, updates: Dict[str, Any]):
+        config_path = self.__config_paths[-1]
+        filepath = os.path.join(config_path, name + '.json')
+        existing = {}
+        try:
+            with open(filepath, encoding='utf-8') as fin:
+                existing = json.load(fin)
+        except Exception:
+            pass
+        if not isinstance(existing, dict):
+            existing = {}
+        existing.update(updates)
+        os.makedirs(config_path, exist_ok=True)
+        with open(filepath, 'w', encoding='utf-8') as fout:
+            json.dump(existing, fout, ensure_ascii=False, indent=4)
 
 
 instance: Optional[XIVPlatform] = None

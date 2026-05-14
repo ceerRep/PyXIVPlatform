@@ -1,23 +1,25 @@
 #! /usr/bin/env python3
 
 import logging
-from .craft_bot import CraftBot
+from .auto_fisher import AutoFisher
 
 meta = {
-    'name': 'CraftBot',
+    'name': 'AutoFisher',
     'requirements': [
         "GameState",
         "ActionSender",
+        "LogScanner",
         "PostNamazuWrapper",
         "CommandHelper",
+        "player",
     ]
 }
 
 
 def init():
-    craftbot = CraftBot()
+    fisher = AutoFisher()
     logging.info(__package__)
-    return craftbot
+    return fisher
 
 
 instance = init()

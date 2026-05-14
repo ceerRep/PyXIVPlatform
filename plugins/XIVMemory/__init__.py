@@ -9,7 +9,7 @@ from .memoryscanner import *
 from .xivprocess import XIVProcess
 from .code_anchor import CodeAnchor, Insn, COND_JUMPS
 
-__all__ = ["meta", "instance", "CodeAnchor", "Insn", "COND_JUMPS", "XIVProcess"]
+__all__ = ["meta", "instance", "XIVProcess"]
 
 meta = {
     'name': 'XIVMemory',

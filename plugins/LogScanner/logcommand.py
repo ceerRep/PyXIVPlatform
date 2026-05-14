@@ -4,6 +4,7 @@ import logging
 import asyncio
 
 from .logscanner import XIVLogScanner, XIVLogLine
+from .log_types import LogType
 
 import PostNamazuWrapper
 
@@ -16,7 +17,7 @@ class LogStream:
 
     @staticmethod
     def log_filter(log: XIVLogLine) -> bool:
-        if log.type == 0x38 and log.fields[1].startswith('[BOT]'):
+        if log.type == LogType.ECHO and log.fields[1].startswith('[BOT]'):
             return False
         return True
 
@@ -27,7 +28,7 @@ class LogStream:
     async def readline(self) -> str:
         while True:
             log: XIVLogLine = await self.queue.get()
-            if log.type == 0x38 and len(log.fields) >= 2 and log.fields[1][:1] == '/':
+            if log.type == LogType.ECHO and len(log.fields) >= 2 and log.fields[1][:1] == '/':
                 return log.fields[1][1:]
 
     @staticmethod

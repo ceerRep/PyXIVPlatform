@@ -8,6 +8,7 @@ import XIVMemory
 import CommandHelper
 from .logscanner import *
 from .logcommand import LogStream
+from .log_types import LogType
 
 __all__ = ["meta", "instance"]
 

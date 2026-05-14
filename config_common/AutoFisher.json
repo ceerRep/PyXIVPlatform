@@ -1,0 +1,21 @@
+{
+    "retry_count": 3,
+    "retry_timeout": 3.5,
+    "delay_after_action": 0.2,
+    "cast_action": ["抛竿", "キャスティング", "Cast"],
+    "hook_action": ["提钩", "フッキング", "Hook"],
+    "precision_hookset_action": ["精准提钩", "プレシジョンフッキング", "Precision Hookset"],
+    "powerful_hookset_action": ["强力提钩", "ストロングフッキング", "Powerful Hookset"],
+    "patient_action": ["耐心II", "ペーシェンスII", "Patience II"],
+    "patient_buff_patterns": ["大尺寸的鱼几率提升", "ラージサイズ釣り上げ率アップ", "Angler's Fortune"],
+    "_comment_patient_buff_patterns": "Substring match against log content to detect Patient buff gain/loss. Status.csv#850 (Angler's Fortune), renamed from Gathering Fortune Up in 7.x.",
+    "patient_cooldown": 240,
+    "_comment_patient_cooldown": "Seconds between Patient II casts. 240 = 560/7*3 from original implementation.",
+    "collectible_action": ["收藏品采集", "収集品採集", "Collector's Glove"],
+    "mooch_actions": [["以小钓大", "泳がせ釣り", "Mooch"], ["以小钓大II", "泳がせ釣りII", "Mooch II"]],
+    "bite_patterns": ["有鱼上钩了", "魚をフッキングした", "Something bites"],
+    "_comment_bite_patterns": "Substring match for hookset log confirmation.",
+    "amiss_patterns": ["警惕性很高", "警戒されてしまった", "sense something amiss"],
+    "_comment_amiss_patterns": "Substring match for fishing spot exhaustion.",
+    "idle_patterns": ["没有进行任何操作", "操作がない状態になってから", "elapsed since your last activity"]
+}

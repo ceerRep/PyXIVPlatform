@@ -3,13 +3,18 @@
 import atexit
 import os
 import aiohttp
-from typing import Union
+from typing import Union, List, Protocol, runtime_checkable
 
 import logging
 import XIVMemory
 import PyXIVPlatform
 
-from typing import List
+
+@runtime_checkable
+class PostNamazuProtocol(Protocol):
+    async def send_cmd(self, cmd: str) -> None: ...
+    async def cmd_do_cmd(self, params: List[str]) -> str: ...
+
 
 config = PyXIVPlatform.instance.load_config(__package__)
 

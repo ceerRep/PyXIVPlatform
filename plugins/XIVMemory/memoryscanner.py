@@ -25,18 +25,15 @@ class MemoryScanner:
         self.callbacks.append(callback)
     
     def add_signature(self, name: str, value: str):
-        self.signatures[name] = b''.join(
-            [
-                (b'(' if mark else b'') +
-                b'|'.join(map(lambda x: rb'\x' + x, part2s)) +
-                (b')' if mark else b'')
-                for part1 in value.encode().split()
-                if [
-                    part2s := part1.split(b'|'),
-                    mark := len(part2s) > 1
-                ]
-            ]
-        ).replace(rb'\x??', b'.')
+        parts = []
+        for token in value.split():
+            alternatives = token.split('|')
+            if len(alternatives) > 1:
+                group = b'|'.join(rb'\x' + alt.encode() for alt in alternatives)
+                parts.append(b'(' + group + b')')
+            else:
+                parts.append(rb'\x' + token.encode())
+        self.signatures[name] = b''.join(parts).replace(rb'\x??', b'.')
 
     def start_scan(self):
         if not self.scanning:

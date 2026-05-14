@@ -24,17 +24,22 @@ async def safe_call(func, *args, **kwargs):
         traceback.print_exc()
 
 
+def _parse_log_header(data: bytes):
+    buffer = io.BytesIO(data)
+    buffer.seek(0, io.SEEK_END)
+    buffer.write(b"\x1F")
+    buffer.seek(0)
+    log_type = int.from_bytes(buffer.read(4), "little")
+    buffer.read(1)
+    return log_type, buffer
+
+
 class XIVRawLogLine:
     def __init__(self, data: bytes, time: float, new: bool):
         self.time = time
-        buffer = io.BytesIO(data)
-        buffer.seek(0, io.SEEK_END)
-        buffer.write(b"\x1F")
-        buffer.seek(0)
-        self.type = int.from_bytes(buffer.read(4), "little")
-        buffer.read(1)
-        self.fields: List[bytes] = []
         self.new = new
+        self.type, buffer = _parse_log_header(data)
+        self.fields: List[bytes] = []
 
         field = bytearray()
         while True:
@@ -55,14 +60,9 @@ class XIVRawLogLine:
 class XIVLogLine:
     def __init__(self, data: bytes, time: float, new: bool):
         self.time = time
-        buffer = io.BytesIO(data)
-        buffer.seek(0, io.SEEK_END)
-        buffer.write(b"\x1F")
-        buffer.seek(0)
-        self.type = int.from_bytes(buffer.read(4), "little")
-        buffer.read(1)
-        self.fields: List[str] = []
         self.new = new
+        self.type, buffer = _parse_log_header(data)
+        self.fields: List[str] = []
 
         field = bytearray()
         while True:
@@ -124,13 +124,11 @@ class XIVLogScanner:
             raw_log_line = XIVRawLogLine(raw_line, timestamp, not self.first_scan)
             log_line = XIVLogLine(raw_line, timestamp, not self.first_scan)
 
-            for filter in self._log_filters:
-                if not filter(log_line):
-                    return
-            
-            for raw_filter in self._raw_filters:
-                if not raw_filter(raw_log_line):
-                    return
+            if not all(f(log_line) for f in self._log_filters):
+                continue
+
+            if not all(f(raw_log_line) for f in self._raw_filters):
+                continue
 
             for listener in self._raw_listeners:
                 loop.create_task(safe_call(listener, raw_log_line, ffxiv))
