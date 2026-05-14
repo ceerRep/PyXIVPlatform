@@ -11,7 +11,7 @@ The fragile part of the project is the set of signatures and offsets in `config_
 ## Codebase layout
 
 - `PyXIVPlatform/platform.py` — config merging (multi-directory `dict.update`), plugin loader.
-- `plugins/XIVMemory/` — process attach, sig scanning, pointer-chain following. `xivprocess.follow_pointer_path` is the primitive everyone else builds on.
+- `plugins/XIVMemory/` — process attach, sig scanning, pointer-chain following. `xivprocess.follow_pointer_path` is the primitive everyone else builds on. `code_anchor.py` provides string-xref + local-disasm primitives for plugins that patch live code without brittle byte signatures.
 - `plugins/LogScanner/` — chat & system log ring buffer reader.
 - `plugins/CraftBot/` — crafting and fishing state machines; reads role / craft state from memory.
 - `plugins/PostNamazuWrapper/` — sends in-game commands via the bundled PostNamazu DLL.
