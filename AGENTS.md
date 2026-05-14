@@ -12,8 +12,11 @@ The fragile part of the project is the set of signatures and offsets in `config_
 
 - `PyXIVPlatform/platform.py` — config merging (multi-directory `dict.update`), plugin loader.
 - `plugins/XIVMemory/` — process attach, sig scanning, pointer-chain following. `xivprocess.follow_pointer_path` is the primitive everyone else builds on. `code_anchor.py` provides string-xref + local-disasm primitives for plugins that patch live code without brittle byte signatures.
-- `plugins/LogScanner/` — chat & system log ring buffer reader.
-- `plugins/CraftBot/` — crafting and fishing state machines; reads role / craft state from memory.
+- `plugins/GameState/` — game state enums (`RoleState`, `CraftState`, `BiteType`), memory scan reader, `BackgroundTask` utility. Other plugins read state via `GameState.instance`.
+- `plugins/ActionSender/` — `ActionDispatcher`: send an in-game action via PostNamazu and await log-based confirmation.
+- `plugins/CraftBot/` — crafting automation (craft, handin, jump).
+- `plugins/AutoFisher/` — fishing automation (autofish, changeplace, patient buff logic).
+- `plugins/LogScanner/` — chat & system log ring buffer reader. `LogType` constants live here.
 - `plugins/PostNamazuWrapper/` — sends in-game commands via the bundled PostNamazu DLL.
 - `config_common/`, `config_CN/`, `config_Global/` — per-region sigs and offsets. JSON, merged in argv order.
 - `recipes/` — user-defined craft macros.
@@ -32,6 +35,7 @@ When a sig stops resolving or an offset reads garbage, these upstream projects a
 | [thewakingsands/ffxiv-datamining-cn](https://github.com/thewakingsands/ffxiv-datamining-cn) and [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining) | Raw game-data CSV dumps (ActionTimeline, Action, Status, Item, …). Both regions stay byte-identical at the data level — pick whichever loads faster for you. |
 | [goatcorp/Dalamud](https://github.com/goatcorp/Dalamud) | Reference for high-level enums (`ConditionFlag`, etc.) when you want a sanity check on naming. |
 | [ravahn/FFXIV_ACT_Plugin](https://github.com/ravahn/FFXIV_ACT_Plugin) | The ACT-side reference for log-line / network parsing. |
+| [strings.wakingsands.com](https://strings.wakingsands.com) | Full-text search across all game CSV strings (Action, Status, LogMessage, …) in CN/JP/EN. Use the Elasticsearch `_search` endpoint to look up log patterns, buff names, or action names when a patch renames something. |
 
 ## Mental model: how a sig/offset entry works
 
@@ -55,13 +59,14 @@ Two consequences worth remembering:
 - **Don't paste live RVAs / VAs in source.** They differ per patch and per region. Validate uniqueness with a throwaway script instead — don't bake the address into a config or comment.
 - **Three-step sig validation:** (1) Python `re` over the binary should hit exactly once; (2) the resolved RIP target must land in a sane PE section (`.data` for globals, `.text` for code); (3) cross-check the semantic against an upstream project before trusting it.
 - **CN ≈ Global at the data and struct level.** ActionTimeline.csv, struct field offsets, etc. are kept in sync. Only RVAs of code and globals differ. If a region-specific config diverges on a *struct* offset, suspect a stale config before suspecting SE.
+- **Log patterns and action names must be i18n arrays.** Any string matched against game log content or sent via `/ac` must be a `[CN, JP, EN]` array in config, never a hardcoded single-language string. Use `strings.wakingsands.com` to look up the correct text for each locale (query the Elasticsearch `_search` endpoint with the known CN or EN string). SE can rename buff/action names across patches — the config array is the only thing that needs updating.
 
 ## Pitfalls
 
 - `PlayerState::Instance()` and similar singletons can return NULL before login. Always null-check the first dereference.
 - `find_signature` caches `0` as the "not found" sentinel. Harmless because RVA 0 is the MZ header, but be aware before you put a sig that legitimately resolves at file offset 0.
 - A sig hitting more than once is silently *not* unique under the current `re.search` (returns the first match). Confirm uniqueness by counting matches yourself before trusting the runtime.
-- Some `RoleState` enum names are misleading by design (e.g. the `*_FISH_BAITED` triplet) because string-matching code in `CraftBot.autofish` keys off substrings of the enum name. Renaming for "clarity" will silently break behavior — always grep for the name first.
+- Some `RoleState` enum names are misleading (e.g. `FISH_BITE_EXCITE` is actually the "precision hookset" bite). Classification is done via `RoleState.is_casting` / `.is_baited` / `.bite_type` properties backed by frozen sets — enum names are safe to rename.
 
 ## Open questions
 
@@ -69,7 +74,7 @@ Living list of unknowns worth resolving when convenient. Add a row when you disc
 
 | Area | Question |
 |---|---|
-| `CraftBot` | The condition byte read at the crafting-state pointer's `+0x38` is empirically 1/2/3/4 during synthesis but has no static xref proving the field's purpose. Confirm or replace with the modern `CraftEventHandler.Condition` / `AddonSynthesis.AtkValues` path used by Artisan. |
+| `GameState` | The condition byte read at the crafting-state pointer's `+0x38` is empirically 1/2/3/4 during synthesis but has no static xref proving the field's purpose. Confirm or replace with the modern `CraftEventHandler.Condition` / `AddonSynthesis.AtkValues` path used by Artisan. |
 | `LogScanner` | The `[16, 0, 0x40, 0x38C]` chain still works but lands inside a large undocumented class mid-struct. Replace with documented `RaptureLogModule` field accessors when bandwidth allows. |
 | `RoleState` | `FISH_ASK_COLLECT = 527502` exceeds the ActionTimeline range and is not a binary constant — likely a high-bit flag composed at runtime. Source unknown. |
 
